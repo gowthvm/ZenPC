@@ -37,13 +37,13 @@ const config: Config = {
         '2xl': 'var(--radius-2xl)',
       },
       transitionDuration: {
-        fast: '200ms',
-        base: '250ms',
-        slow: '300ms',
+        fast: 'var(--dur-fast)',
+        base: 'var(--dur-base)',
+        slow: 'var(--dur-slow)',
       },
       transitionTimingFunction: {
-        premium: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-        out: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        premium: 'var(--ease-premium)',
+        out: 'var(--ease-out)',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
