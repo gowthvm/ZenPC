@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
+import { useEffect } from 'react';
+import Link from 'next/link';
 import { useBuilderStore } from '@/store/builder';
 
-// Mock data
 const PART_CATEGORIES = [
   { key: 'cpu', label: 'CPU' },
   { key: 'gpu', label: 'GPU' },
@@ -13,36 +14,6 @@ const PART_CATEGORIES = [
   { key: 'case', label: 'Case' },
 ];
 
-const MOCK_PARTS: { [key: string]: any[] } = {
-  cpu: [
-    { id: 'cpu1', name: 'AMD Ryzen 5 7600', price: 200, cores: 6, socket: 'AM5' },
-    { id: 'cpu2', name: 'Intel Core i5-13600K', price: 270, cores: 14, socket: 'LGA1700' },
-  ],
-  gpu: [
-    { id: 'gpu1', name: 'NVIDIA RTX 4070', price: 600, vram: 12 },
-    { id: 'gpu2', name: 'AMD Radeon RX 7800 XT', price: 500, vram: 16 },
-  ],
-  motherboard: [
-    { id: 'mb1', name: 'ASUS B650-PLUS', price: 180, socket: 'AM5', chipset: 'B650' },
-    { id: 'mb2', name: 'MSI Z690 PRO', price: 210, socket: 'LGA1700', chipset: 'Z690' },
-  ],
-  ram: [
-    { id: 'ram1', name: 'Corsair Vengeance 32GB DDR5', price: 120, speed: '6000MHz' },
-    { id: 'ram2', name: 'G.Skill Ripjaws 32GB DDR4', price: 90, speed: '3600MHz' },
-  ],
-  storage: [
-    { id: 'storage1', name: 'Samsung 980 Pro 1TB NVMe', price: 90, type: 'SSD' },
-    { id: 'storage2', name: 'WD Blue 2TB HDD', price: 50, type: 'HDD' },
-  ],
-  psu: [
-    { id: 'psu1', name: 'Corsair RM750x', price: 110, wattage: 750 },
-    { id: 'psu2', name: 'EVGA 600 BR', price: 60, wattage: 600 },
-  ],
-  case: [
-    { id: 'case1', name: 'NZXT H510', price: 80 },
-    { id: 'case2', name: 'Fractal Design Meshify C', price: 100 },
-  ],
-};
 
 function getPartLabel(category: string, part: any) {
   if (!part) return '';
@@ -57,11 +28,77 @@ function getPartLabel(category: string, part: any) {
   }
 }
 
+import { fetchParts } from '@/lib/supabaseParts';
+
 export default function BuilderPage() {
   const { selected, setPart, reset } = useBuilderStore();
   const [activeCategory, setActiveCategory] = useState<string>('cpu');
+  const [parts, setParts] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [displayPosition, setDisplayPosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setParts([]);
+    fetchParts(activeCategory)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.error) {
+          setError('Failed to load parts.');
+          setParts([]);
+        } else {
+          // Flatten data: merge row.data into row, prefer top-level fields for id, name, price
+          setParts(
+            (res.data || []).map((row: any) => ({
+              ...row.data,
+              id: row.id || row.data?.id,
+              name: row.name || row.data?.name,
+              price: row.data?.price,
+            }))
+          );
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError('Failed to load parts.');
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeCategory]);
 
   const budget = Object.values(selected).reduce((sum, part) => sum + (part?.price || 0), 0);
+
+  // Mouse-following gradient effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Smooth movement using lerp
+  useEffect(() => {
+    const lerp = (start: number, end: number, factor: number) => {
+      return start + (end - start) * factor;
+    };
+
+    const animate = () => {
+      setDisplayPosition(prev => ({
+        x: lerp(prev.x, mousePosition.x, 0.1),
+        y: lerp(prev.y, mousePosition.y, 0.1)
+      }));
+    };
+
+    const animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [mousePosition]);
 
   // Compatibility engine
   const issues: string[] = [];
@@ -100,71 +137,170 @@ export default function BuilderPage() {
   const isCompatible = issues.length === 0;
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 w-full h-full">
-      {/* Parts selection */}
-      <aside className="w-full md:w-64 bg-surface-1/80 rounded-xl shadow-glass p-4 flex flex-col gap-4">
-        <div className="font-display text-lg font-bold mb-2">Select Parts</div>
-        <nav className="flex flex-col gap-1">
-          {PART_CATEGORIES.map((cat: { key: string; label: string }) => (
-            <button
-              key={cat.key}
-              className={`text-left px-3 py-2 rounded-md font-medium transition-colors ${activeCategory === cat.key ? 'bg-accent/10 text-accent' : 'hover:bg-surface-2/60'}`}
-              onClick={() => setActiveCategory(cat.key)}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </nav>
-        <div className="mt-4">
-          {(MOCK_PARTS[activeCategory] || []).map(part => (
-            <button
-              key={part.id}
-              className={`block w-full text-left px-3 py-2 rounded-lg border border-border/10 mb-2 transition-colors ${selected[activeCategory]?.id === part.id ? 'bg-accent/20 border-accent text-accent' : 'hover:bg-surface-2/80'}`}
-              onClick={() => setPart(activeCategory, part)}
-            >
-              <div className="font-semibold">{part.name}</div>
-              <div className="text-xs text-text-muted">${part.price} {getPartLabel(activeCategory, part)}</div>
-            </button>
-          ))}
-        </div>
-      </aside>
-      {/* Main content */}
-      <main className="flex-1 flex flex-col gap-6">
-        {/* Selected part details */}
-        <section className="bg-surface-1/80 rounded-xl shadow-glass p-6 min-h-[180px]">
-          <div className="font-display text-lg font-bold mb-4">Selected Part Details</div>
-          {selected[activeCategory] ? (
-            <div>
-              <div className="font-semibold text-base mb-1">{selected[activeCategory].name}</div>
-              <div className="text-sm text-text-muted mb-1">${selected[activeCategory].price}</div>
-              <pre className="text-xs bg-surface-2/80 rounded p-3 mt-2 overflow-x-auto">
-                {JSON.stringify(selected[activeCategory], null, 2)}
-              </pre>
+    <div className="flex min-h-dvh flex-col bg-bg text-text-primary relative overflow-hidden">
+      {/* Mouse-following gradient background */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-surface-1 via-transparent to-surface-2 opacity-50" />
+        <div 
+          className="absolute inset-0 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(800px circle at ${displayPosition.x}px ${displayPosition.y}px, rgba(99, 112, 241, 0.15), transparent 40%)`,
+          }}
+        />
+      </div>
+      
+      {/* Content wrapper */}
+      <div className="relative z-10">
+        {/* Glassmorphic Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 w-full px-6 pt-6 pb-4 flex items-center justify-between gap-8 bg-surface-1/20 backdrop-blur-glass border-b border-border/10 shadow-glass transition-all duration-300">
+          <div className="max-w-6xl mx-auto w-full flex items-center justify-between gap-8">
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/" 
+                className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors duration-200 group"
+              >
+                <svg className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Home
+              </Link>
             </div>
-          ) : (
-            <div className="text-text-muted">No part selected.</div>
-          )}
-        </section>
-        {/* Budget + compatibility panel */}
-        <section className="bg-surface-1/80 rounded-xl shadow-glass p-6 flex flex-col md:flex-row items-center gap-6">
-          <div className="flex-1">
-            <div className="font-display text-lg font-bold mb-2">Budget</div>
-            <div className="text-2xl font-semibold">${budget}</div>
+            <h1 className="font-display text-xl font-bold text-text-primary">PC Builder</h1>
+            <div className="flex items-center gap-3">
+              <Link href="/app" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200">Dashboard</Link>
+              <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center font-display text-sm font-bold text-white select-none shadow-lg">Z</div>
+            </div>
           </div>
-          <div className="flex-1">
-            <div className="font-display text-lg font-bold mb-2">Compatibility</div>
-            {isCompatible ? (
-              <div className="text-green-400">Compatible</div>
-            ) : (
-              <ul className="text-red-400 list-disc list-inside space-y-1">
-                {issues.map((issue, i) => (
-                  <li key={i}>{issue}</li>
-                ))}
-              </ul>
-            )}
+        </header>
+        
+        {/* Main Content */}
+        <main className="flex-1 w-full px-4 md:px-6 pt-24 pb-12">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Parts Selection Panel */}
+              <div className="lg:col-span-1">
+                <div className="card p-6">
+                  <h2 className="font-display text-2xl font-bold mb-6 text-text-primary">Select Parts</h2>
+                  
+                  {/* Categories */}
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-lg mb-3 text-text-primary">Categories</h3>
+                    <nav className="flex flex-col gap-2">
+                      {PART_CATEGORIES.map((cat: { key: string; label: string }) => (
+                        <button
+                          key={cat.key}
+                          className={`text-left px-4 py-3 rounded-lg font-medium transition-all duration-200 ${activeCategory === cat.key ? 'bg-accent/20 text-accent border border-accent/30' : 'hover:bg-surface-2/60 text-text-primary border border-border/10'}`}
+                          onClick={() => setActiveCategory(cat.key)}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                  
+                  {/* Parts List */}
+                  <div>
+                    <h3 className="font-semibold text-lg mb-3 text-text-primary">Available Parts</h3>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {loading ? (
+                        <div className="text-text-muted text-center py-8">Loading parts…</div>
+                      ) : error ? (
+                        <div className="text-red-400 text-center py-8">{error}</div>
+                      ) : parts.length === 0 ? (
+                        <div className="text-text-muted text-center py-8">No parts found for this category.</div>
+                      ) : (
+                        parts.map(part => (
+                          <button
+                            key={part.id}
+                            className={`block w-full text-left p-3 rounded-lg border transition-all duration-200 ${selected[activeCategory]?.id === part.id ? 'bg-accent/20 border-accent text-accent' : 'hover:bg-surface-2/80 border-border/10 text-text-primary'}`}
+                            onClick={() => setPart(activeCategory, part)}
+                          >
+                            <div className="font-semibold">{part.name}</div>
+                            <div className="text-sm text-text-muted">${part.price ?? '?'} {getPartLabel(activeCategory, part)}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Main Content Area */}
+              <div className="lg:col-span-2 space-y-8">
+                {/* Selected Part Details */}
+                <div className="card p-6">
+                  <h2 className="font-display text-2xl font-bold mb-4 text-text-primary">Selected Part Details</h2>
+                  {selected[activeCategory] ? (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="font-semibold text-xl mb-2 text-text-primary">{selected[activeCategory].name}</div>
+                        <div className="text-2xl font-bold text-accent mb-4">${selected[activeCategory].price}</div>
+                      </div>
+                      <div className="bg-surface-2/50 rounded-lg p-4">
+                        <pre className="text-sm text-text-muted overflow-x-auto">
+                          {JSON.stringify(selected[activeCategory], null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-text-muted text-center py-8">No part selected. Choose a category and select a part to view details.</div>
+                  )}
+                </div>
+                
+                {/* Budget and Compatibility Panel */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="card p-6">
+                    <h3 className="font-display text-xl font-bold mb-4 text-text-primary">Budget</h3>
+                    <div className="text-3xl font-bold text-accent">${budget}</div>
+                    <div className="text-sm text-text-muted mt-2">Total build cost</div>
+                  </div>
+                  
+                  <div className="card p-6">
+                    <h3 className="font-display text-xl font-bold mb-4 text-text-primary">Compatibility</h3>
+                    {isCompatible ? (
+                      <div className="flex items-center gap-2">
+                        <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-green-400 font-semibold">Compatible</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-red-400 font-semibold">Issues Found</span>
+                        </div>
+                        <ul className="text-red-400 text-sm space-y-1">
+                          {issues.map((issue, i) => (
+                            <li key={i}>• {issue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-4 justify-center">
+                  <button 
+                    onClick={reset}
+                    className="px-6 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30"
+                  >
+                    Reset Build
+                  </button>
+                  <button 
+                    className="px-8 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                  >
+                    Save Build
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

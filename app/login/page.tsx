@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { signInWithEmail } from '@/lib/supabaseAuth';
 
 export default function LoginPage() {
@@ -24,7 +25,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-dvh flex items-center justify-center px-4">
+    <main className="min-h-dvh flex items-center justify-center px-4 relative">
+      <div className="absolute top-8 left-6">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors duration-200 group"
+        >
+          <svg className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-surface-1 rounded-xl shadow-glass p-8 flex flex-col gap-5">
         <h1 className="font-display text-2xl font-bold mb-2 text-center">Sign In</h1>
         <input

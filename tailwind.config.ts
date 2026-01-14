@@ -12,6 +12,7 @@ const config: Config = {
         bg: 'rgb(var(--bg) / <alpha-value>)',
         'surface-1': 'rgb(var(--surface-1) / <alpha-value>)',
         'surface-2': 'rgb(var(--surface-2) / <alpha-value>)',
+        'surface-3': 'rgb(var(--surface-3) / <alpha-value>)',
         border: 'rgb(var(--border) / <alpha-value>)',
         ring: 'rgb(var(--ring) / <alpha-value>)',
         text: {

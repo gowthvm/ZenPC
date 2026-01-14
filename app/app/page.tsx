@@ -1,72 +1,140 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { useBuilderStore } from '@/store/builder';
 
-export default function AppHome() {
+export default function AppPage() {
+  const { selected } = useBuilderStore();
+  const [savedBuilds, setSavedBuilds] = useState<any[]>([]);
+
+  // Mock saved builds data
+  useEffect(() => {
+    const mockBuilds = [
+      {
+        id: '1',
+        name: 'Gaming Beast',
+        budget: 1500,
+        parts: { cpu: { name: 'AMD Ryzen 5 7600', price: 200 }, gpu: { name: 'NVIDIA RTX 4070', price: 600 } },
+        createdAt: new Date('2024-01-15'),
+        compatible: true
+      },
+      {
+        id: '2', 
+        name: 'Office Workstation',
+        budget: 800,
+        parts: { cpu: { name: 'Intel Core i5-12400', price: 180 }, gpu: { name: 'AMD Radeon RX 6600', price: 300 } },
+        createdAt: new Date('2024-01-10'),
+        compatible: true
+      }
+    ];
+    setSavedBuilds(mockBuilds);
+  }, []);
+
+  const currentBudget = Object.values(selected).reduce((sum, part) => sum + (part?.price || 0), 0);
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Hero Section */}
-      <main className="flex-1 flex items-center justify-center px-6 py-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-8">
-            <h1 className="text-6xl md:text-7xl font-display font-bold text-text-primary mb-6 tracking-tight">
-              ZenPC
-            </h1>
-            <p className="text-xl md:text-2xl text-text-muted mb-8 max-w-2xl mx-auto leading-relaxed">
-              Premium PC Builder for enthusiasts who demand perfection. Design, customize, and build your dream PC with our intuitive interface.
-            </p>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Link href="/builder">
-              <Button className="w-full sm:w-auto text-lg px-8 py-3 h-12 btn">
-                Start Building
-              </Button>
-            </Link>
-            <Link href="/guide">
-              <Button variant="outline" className="w-full sm:w-auto text-lg px-8 py-3 h-12 btn">
-                View Guide
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </main>
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="text-center space-y-4">
+        <h1 className="font-display text-4xl font-bold text-text-primary">My Builds</h1>
+        <p className="text-lg text-text-muted max-w-2xl mx-auto">
+          Manage your PC builds, start new projects, and track your progress
+        </p>
+      </div>
 
-      {/* Features Section */}
-      <section className="py-20 px-6 border-t border-border/10">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8">
+      {/* Current Build Status */}
+      {Object.keys(selected).length > 0 && (
+        <div className="card p-6">
+          <h2 className="font-display text-2xl font-bold mb-4 text-text-primary">Current Build</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-text-primary mb-2">Smart Compatibility</h3>
-              <p className="text-text-muted">Real-time compatibility checking ensures all your components work together perfectly.</p>
+              <div className="text-3xl font-bold text-accent">${currentBudget}</div>
+              <div className="text-sm text-text-muted">Current Budget</div>
             </div>
-            
             <div className="text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-text-primary mb-2">Fine-Tuned Control</h3>
-              <p className="text-text-muted">Detailed customization options for every component to match your exact requirements.</p>
+              <div className="text-3xl font-bold text-text-primary">{Object.keys(selected).length}</div>
+              <div className="text-sm text-text-muted">Parts Selected</div>
             </div>
-            
             <div className="text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-text-primary mb-2">Performance Tracking</h3>
-              <p className="text-text-muted">Monitor your build's performance metrics and optimize for your specific needs.</p>
+              <div className="text-3xl font-bold text-green-400">In Progress</div>
+              <div className="text-sm text-text-muted">Status</div>
             </div>
           </div>
+          <div className="flex gap-4 mt-6 justify-center">
+            <Link 
+              href="/app/builder" 
+              className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+            >
+              Continue Building
+            </Link>
+            <button className="px-6 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30">
+              Save Build
+            </button>
+          </div>
         </div>
-      </section>
+      )}
+
+      {/* Saved Builds */}
+      <div className="space-y-6">
+        <h2 className="font-display text-2xl font-bold text-text-primary">Saved Builds</h2>
+        {savedBuilds.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {savedBuilds.map((build) => (
+              <div key={build.id} className="card p-6 hover:scale-105 transition-all duration-200">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-semibold text-lg text-text-primary">{build.name}</h3>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    build.compatible 
+                      ? 'bg-green-400/20 text-green-400' 
+                      : 'bg-red-400/20 text-red-400'
+                  }`}>
+                    {build.compatible ? 'Compatible' : 'Issues'}
+                  </div>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Budget:</span>
+                    <span className="font-semibold text-accent">${build.budget}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Parts:</span>
+                    <span className="font-semibold">{Object.keys(build.parts).length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Created:</span>
+                    <span className="font-semibold">{build.createdAt.toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="flex-1 px-3 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors">
+                    Load
+                  </button>
+                  <button className="flex-1 px-3 py-2 rounded-lg border border-border text-text-primary text-sm font-medium hover:border-text-primary transition-colors">
+                    Edit
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="card p-12 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center">
+              <svg className="w-10 h-10 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h3 className="font-display text-xl font-semibold text-text-primary mb-2">No Saved Builds</h3>
+            <p className="text-text-muted mb-6">Start building your first PC to see it here</p>
+            <Link 
+              href="/app/builder" 
+              className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+            >
+              Start Building
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
