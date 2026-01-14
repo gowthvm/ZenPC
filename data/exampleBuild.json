@@ -1,0 +1,49 @@
+{
+  "name": "ZenPC Example Build",
+  "parts": {
+    "cpu": {
+      "id": "cpu1",
+      "name": "AMD Ryzen 5 7600",
+      "price": 200,
+      "cores": 6,
+      "socket": "AM5"
+    },
+    "motherboard": {
+      "id": "mb1",
+      "name": "ASUS B650-PLUS",
+      "price": 180,
+      "socket": "AM5",
+      "chipset": "B650"
+    },
+    "ram": {
+      "id": "ram1",
+      "name": "Corsair Vengeance 32GB DDR5",
+      "price": 120,
+      "speed": "6000MHz"
+    },
+    "gpu": {
+      "id": "gpu2",
+      "name": "AMD Radeon RX 7800 XT",
+      "price": 500,
+      "vram": 16
+    },
+    "storage": {
+      "id": "storage1",
+      "name": "Samsung 980 Pro 1TB NVMe",
+      "price": 90,
+      "type": "SSD"
+    },
+    "psu": {
+      "id": "psu1",
+      "name": "Corsair RM750x",
+      "price": 110,
+      "wattage": 750
+    },
+    "case": {
+      "id": "case2",
+      "name": "Fractal Design Meshify C",
+      "price": 100
+    }
+  },
+  "notes": "A balanced mid-range build with DDR5, PCIe 4.0 SSD, and reliable 750W PSU. Compatible and quiet."
+}

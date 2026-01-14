@@ -116,6 +116,24 @@
 
 @layer components {
   .card {
-    @apply rounded-xl border border-border/10 bg-surface-1/55 shadow-glass backdrop-blur-glass;
+    @apply rounded-xl border border-border/10 bg-surface-1/55 shadow-glass backdrop-blur-glass transition-transform duration-base ease-premium;
+  }
+  .card:hover {
+    @apply shadow-lg scale-[1.015] border-accent/20;
+    box-shadow: 0 6px 32px 0 rgb(99 112 241 / 0.08), 0 1.5px 0 rgb(255 255 255 / 0.04) inset;
+  }
+  .btn {
+    @apply transition-transform duration-base ease-premium active:scale-95 focus-visible:ring-2 focus-visible:ring-ring;
   }
 }
+
+@layer utilities {
+  .transition-base {
+    transition-duration: var(--dur-base);
+    transition-timing-function: var(--ease-premium);
+  }
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-ring;
+  }
+}
+

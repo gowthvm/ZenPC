@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useBuilderStore } from '@/store/builder';
 
 // Mock data
 const PART_CATEGORIES = [
@@ -57,16 +58,46 @@ function getPartLabel(category: string, part: any) {
 }
 
 export default function BuilderPage() {
-  const [selected, setSelected] = useState<Record<string, any>>({});
+  const { selected, setPart, reset } = useBuilderStore();
   const [activeCategory, setActiveCategory] = useState<string>('cpu');
 
   const budget = Object.values(selected).reduce((sum, part) => sum + (part?.price || 0), 0);
 
-  // Simple compatibility: socket match for CPU/motherboard
-  let compatibility = 'Compatible';
+  // Compatibility engine
+  const issues: string[] = [];
+
+  // CPU ↔ motherboard socket
   if (selected.cpu && selected.motherboard && selected.cpu.socket !== selected.motherboard.socket) {
-    compatibility = 'Incompatible: CPU and motherboard sockets do not match';
+    issues.push('CPU and motherboard sockets do not match');
   }
+
+  // RAM generation (DDR5/DDR4)
+  if (selected.ram && selected.motherboard) {
+    const ramGen = selected.ram.speed?.includes('DDR5') ? 'DDR5' : selected.ram.speed?.includes('DDR4') ? 'DDR4' : undefined;
+    const mbGen = selected.motherboard.chipset?.includes('B650') || selected.motherboard.chipset?.includes('Z690') ? 'DDR5' : 'DDR4';
+    if (ramGen && ramGen !== mbGen) {
+      issues.push('RAM generation does not match motherboard');
+    }
+  }
+
+  // PSU wattage headroom (GPU + CPU + 100W < PSU)
+  if (selected.psu && (selected.cpu || selected.gpu)) {
+    const cpuWatt = selected.cpu ? 65 : 0; // mock typical CPU TDP
+    const gpuWatt = selected.gpu ? 220 : 0; // mock typical GPU TDP
+    if (selected.psu.wattage < cpuWatt + gpuWatt + 100) {
+      issues.push('PSU wattage may be insufficient');
+    }
+  }
+
+  // Case ↔ GPU length (mock: only allow one GPU per case for demo)
+  if (selected.gpu && selected.case) {
+    if (selected.gpu.id === 'gpu1' && selected.case.id === 'case1') {
+      // e.g., RTX 4070 too long for NZXT H510 (mock)
+      issues.push('GPU may not fit in selected case');
+    }
+  }
+
+  const isCompatible = issues.length === 0;
 
   return (
     <div className="flex flex-col md:flex-row gap-6 w-full h-full">
@@ -89,7 +120,7 @@ export default function BuilderPage() {
             <button
               key={part.id}
               className={`block w-full text-left px-3 py-2 rounded-lg border border-border/10 mb-2 transition-colors ${selected[activeCategory]?.id === part.id ? 'bg-accent/20 border-accent text-accent' : 'hover:bg-surface-2/80'}`}
-              onClick={() => setSelected(s => ({ ...s, [activeCategory]: part }))}
+              onClick={() => setPart(activeCategory, part)}
             >
               <div className="font-semibold">{part.name}</div>
               <div className="text-xs text-text-muted">${part.price} {getPartLabel(activeCategory, part)}</div>
@@ -122,7 +153,15 @@ export default function BuilderPage() {
           </div>
           <div className="flex-1">
             <div className="font-display text-lg font-bold mb-2">Compatibility</div>
-            <div className={compatibility === 'Compatible' ? 'text-green-400' : 'text-red-400'}>{compatibility}</div>
+            {isCompatible ? (
+              <div className="text-green-400">Compatible</div>
+            ) : (
+              <ul className="text-red-400 list-disc list-inside space-y-1">
+                {issues.map((issue, i) => (
+                  <li key={i}>{issue}</li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
       </main>
