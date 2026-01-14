@@ -2,7 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none px-5 py-2 h-10 text-base',
+  'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
   {
     variants: {
       variant: {
@@ -11,9 +11,16 @@ const buttonVariants = cva(
         subtle: 'bg-surface-2 text-text-primary hover:bg-surface-2/80',
         ghost: 'bg-transparent hover:bg-surface-2/50 text-text-muted hover:text-text-primary',
       },
+      size: {
+        default: 'px-5 py-2 h-10 text-base',
+        icon: 'h-10 w-10 p-0',
+        sm: 'h-9 px-3 text-sm',
+        lg: 'h-11 px-8 text-base',
+      },
     },
     defaultVariants: {
       variant: 'default',
+      size: 'default',
     },
   }
 );

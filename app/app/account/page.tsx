@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 type UserProfile = {
@@ -48,7 +49,7 @@ export default function AccountPage() {
     };
 
     fetchProfile();
-  }, [supabase]);
+  }, []); // Removed supabase from dependencies
 
   const handleSignOut = async () => {
     try {
@@ -93,9 +94,11 @@ export default function AccountPage() {
             <div className="flex flex-col items-center text-center mb-6">
               <div className="w-20 h-20 rounded-full bg-surface-3/50 flex items-center justify-center mb-4 overflow-hidden">
                 {profile.avatar_url ? (
-                  <img 
+                  <Image 
                     src={profile.avatar_url} 
                     alt={profile.full_name || 'User'} 
+                    width={80}
+                    height={80}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -220,7 +223,7 @@ export default function AccountPage() {
                     <span className="text-sm font-medium">
                       {false ? 'Enabled' : 'Disabled'}
                     </span>
-                    <Button variant={false ? 'outline' : 'default'} size="sm">
+                    <Button variant={false ? 'outline' : 'default'}>
                       {false ? 'Disable' : 'Enable'} 2FA
                     </Button>
                   </div>
@@ -234,7 +237,7 @@ export default function AccountPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">Saved Builds</h2>
                 <Link href="/app/builder">
-                  <Button size="sm" variant="outline">
+                  <Button variant="outline">
                     New Build
                   </Button>
                 </Link>
@@ -247,7 +250,7 @@ export default function AccountPage() {
                   </svg>
                 </div>
                 <p className="text-text-muted mb-4">
-                  You don't have any saved builds yet.
+                  You don&apos;t have any saved builds yet.
                 </p>
                 <Link href="/app/builder">
                   <Button variant="default">
