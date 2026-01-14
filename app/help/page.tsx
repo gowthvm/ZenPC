@@ -12,7 +12,7 @@ export default function HelpPage() {
         </div>
         <div className="bg-surface-2 rounded-xl border border-border/10 p-6 shadow">
           <h2 className="text-2xl font-semibold mb-2 text-text-primary">Account Issues</h2>
-          <p className="text-text-muted">Trouble logging in or managing your account? We're here to help.</p>
+          <p className="text-text-muted">Trouble logging in or managing your account? We&apos;re here to help.</p>
         </div>
       </section>
     </main>

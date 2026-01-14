@@ -8,7 +8,7 @@ export default function DocsPage() {
       <section className="space-y-8">
         <div className="bg-surface-2 rounded-xl border border-border/10 p-6 shadow">
           <h2 className="text-2xl font-semibold mb-2 text-text-primary">User Guide</h2>
-          <p className="text-text-muted">Step-by-step instructions for using ZenPC's builder and tools.</p>
+          <p className="text-text-muted">Step-by-step instructions for using ZenPC&apos;s builder and tools.</p>
         </div>
         <div className="bg-surface-2 rounded-xl border border-border/10 p-6 shadow">
           <h2 className="text-2xl font-semibold mb-2 text-text-primary">API Reference</h2>
