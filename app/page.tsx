@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Divider } from '@/components/ui/Divider';
 
@@ -15,9 +16,14 @@ export default function Page() {
           <a href="#pricing" className="hover:text-accent transition-colors">Pricing</a>
           <a href="#faq" className="hover:text-accent transition-colors">FAQ</a>
         </nav>
-        <Button asChild>
-          <a href="#" className="font-semibold">Get Started</a>
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" asChild>
+            <Link href="/login" className="font-medium">Log In</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register" className="font-semibold">Register</Link>
+          </Button>
+        </div>
       </header>
 
       <main className="flex-1 w-full flex flex-col items-center px-6">
@@ -25,7 +31,9 @@ export default function Page() {
         <section className="w-full max-w-3xl text-center space-y-6 pt-24 pb-16">
           <h1 className="font-display text-4xl font-bold mb-2">Build Your Dream PC, Effortlessly</h1>
           <p className="text-lg text-text-muted mb-6">ZenPC is the premium builder for custom PCs. Professional, distraction-free, and always up to date.</p>
-          <Button className="mt-2">Start Building</Button>
+          <Button className="mt-2" asChild>
+            <Link href="/register">Start Building</Link>
+          </Button>
         </section>
 
         {/* How it works */}
@@ -58,7 +66,9 @@ export default function Page() {
 
         {/* CTA */}
         <section className="w-full max-w-2xl text-center py-12">
-          <Button className="text-base px-8 py-3">Get Started</Button>
+          <Button className="text-base px-8 py-3" asChild>
+            <Link href="/register">Get Started</Link>
+          </Button>
         </section>
       </main>
 
@@ -67,10 +77,12 @@ export default function Page() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-text-muted pt-4">
           <div>© {new Date().getFullYear()} ZenPC. All rights reserved.</div>
           <nav className="flex gap-5">
-            <a href="#about" className="hover:text-accent transition-colors">About</a>
-            <a href="#privacy" className="hover:text-accent transition-colors">Privacy</a>
-            <a href="#terms" className="hover:text-accent transition-colors">Terms</a>
-            <a href="#contact" className="hover:text-accent transition-colors">Contact</a>
+            import Link from 'next/link';
+// ...
+<Link href="/about" className="hover:text-accent transition-colors">About</Link>
+<Link href="/privacy" className="hover:text-accent transition-colors">Privacy</Link>
+<Link href="/terms" className="hover:text-accent transition-colors">Terms</Link>
+<Link href="/contact" className="hover:text-accent transition-colors">Contact</Link>
           </nav>
         </div>
       </footer>
