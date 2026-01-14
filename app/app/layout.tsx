@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { Button } from '@/components/ui/button';
+import { Button } from '../../components/ui/button';
 import { Home, Settings, LogOut, LayoutDashboard, Cpu, BookOpen } from 'lucide-react';
 
 const navItems = [
