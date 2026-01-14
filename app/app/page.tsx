@@ -2,11 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { useBuilderStore } from '@/store/builder';
 
 export default function AppPage() {
   const { selected } = useBuilderStore();
   const [savedBuilds, setSavedBuilds] = useState<any[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Mock saved builds data
   useEffect(() => {
@@ -32,6 +38,22 @@ export default function AppPage() {
   }, []);
 
   const currentBudget = Object.values(selected).reduce((sum, part) => sum + (part?.price || 0), 0);
+
+  if (!isClient) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="font-display text-4xl font-bold text-text-primary">My Builds</h1>
+          <p className="text-lg text-text-muted max-w-2xl mx-auto">
+            Manage your PC builds, start new projects, and track your progress
+          </p>
+        </div>
+        <div className="text-center py-12">
+          <div className="animate-pulse">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

@@ -1,3 +1,4 @@
+// moved from app/app/builder/page.tsx
 'use client';
 import { useState } from 'react';
 import { useEffect } from 'react';
