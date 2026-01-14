@@ -3,16 +3,17 @@
 import Link from 'next/link';
 import { Button } from './components/ui/button';
 import { Divider } from './components/ui/divider';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function Page() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [displayPosition, setDisplayPosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
-  const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
+  const [sectionVisibility, setSectionVisibility] = useState<{ [key: string]: boolean }>({});
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 });
+  const rafRef = useRef<number>();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     // Check for existing user session
@@ -31,10 +32,6 @@ export default function Page() {
 
     checkUser();
 
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
@@ -42,7 +39,7 @@ export default function Page() {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          setIsVisible((prev) => ({
+          setSectionVisibility((prev) => ({
             ...prev,
             [entry.target.id]: entry.isIntersecting,
           }));
@@ -51,7 +48,6 @@ export default function Page() {
       { threshold: 0.1 }
     );
 
-    window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('scroll', handleScroll);
     
     // Observe all sections
@@ -60,43 +56,65 @@ export default function Page() {
     });
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
     };
   }, []);
 
-  // Smooth movement using lerp
+  // Smooth cursor effect with requestAnimationFrame
   useEffect(() => {
-    const lerp = (start: number, end: number, factor: number) => {
-      return start + (end - start) * factor;
+    setIsClient(true);
+    
+    let targetX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
+    let targetY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isClient) return;
+      targetX = e.clientX;
+      targetY = e.clientY;
     };
 
     const animate = () => {
-      setDisplayPosition(prev => ({
-        x: lerp(prev.x, mousePosition.x, 0.1),
-        y: lerp(prev.y, mousePosition.y, 0.1)
+      setSmoothPosition(prev => ({
+        x: prev.x + (targetX - prev.x) * 0.1,
+        y: prev.y + (targetY - prev.y) * 0.1
       }));
+      rafRef.current = requestAnimationFrame(animate);
     };
 
-    const animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [mousePosition]);
+    rafRef.current = requestAnimationFrame(animate);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isClient]);
+
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-text-primary relative overflow-hidden">
-      {/* Minimal background with mouse-following gradient */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-surface-1 via-transparent to-surface-2 opacity-50" />
-        <div 
-          className="absolute inset-0 transition-opacity duration-300"
-          style={{
-            background: `radial-gradient(800px circle at ${displayPosition.x}px ${displayPosition.y}px, rgba(99, 112, 241, 0.15), transparent 40%)`,
-          }}
-        />
-      </div>
+      {/* Purple cursor effect */}
+      <div style={{
+        position: 'fixed',
+        width: '600px',
+        height: '600px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 70%)',
+        left: `${smoothPosition.x}px`,
+        top: `${smoothPosition.y}px`,
+        transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
+        zIndex: 0,
+        filter: 'blur(30px)',
+        willChange: 'transform',
+        transition: 'opacity 0.3s ease-out',
+        opacity: 1
+      }} />
       
-      {/* Content wrapper to ensure content is above the background effect */}
-      <div className="relative z-10">
+      {/* Content wrapper */}
+      <div className="relative">
       {/* Minimal Header */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full px-6 pt-6 pb-4 flex items-center justify-between gap-8 bg-surface-1/20 backdrop-blur-glass border-b border-border/10 shadow-glass transition-all duration-300">
         <div className="max-w-6xl mx-auto w-full flex items-center justify-between gap-8">
@@ -140,30 +158,34 @@ export default function Page() {
       </header>
 
       <main className="flex-1 w-full flex flex-col items-center px-4 md:px-6 pt-24">
-        {/* Minimal Hero Section */}
-        <section id="hero" className={`w-full max-w-5xl mx-auto text-center space-y-10 pt-32 pb-24 transition-all duration-1000 ${isVisible['hero'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <div className="space-y-6">
-            <h1 className="font-display text-5xl md:text-6xl font-semibold text-text-primary leading-tight">
-              Build Your Dream PC
-              <br />
-              <span className="text-accent">Effortlessly</span>
+        {/* Hero Section */}
+        <section className="w-full max-w-4xl mx-auto py-24 px-4">
+          <div className="text-center space-y-6">
+            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">
+              Build Your Perfect PC
             </h1>
-            <p className="text-lg md:text-xl text-text-muted max-w-3xl mx-auto leading-relaxed">
-              Professional PC builder with real-time compatibility checking and expert-curated components.
+            <p className="text-xl text-text-muted max-w-2xl mx-auto">
+              Create a custom PC with our easy-to-use builder and expert recommendations.
             </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/app" className="px-8 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
-              Start Building
-            </Link>
-            <Link href="/about" className="px-8 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30">
-              Learn More
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
+              <Link 
+                href="/app" 
+                className="px-8 py-3.5 bg-accent hover:bg-accent/90 text-white font-medium rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+              >
+                Start Building
+              </Link>
+              <Link 
+                href="/guide" 
+                className="px-8 py-3.5 border border-border/20 text-text-primary font-medium rounded-lg transition-all duration-300 hover:bg-surface-2/50"
+              >
+                View Guide
+              </Link>
+            </div>
           </div>
         </section>
 
-        {/* Minimal How It Works */}
-        <section id="how-it-works" className={`w-full max-w-6xl mx-auto flex flex-col items-center gap-16 my-20 transition-all duration-1000 ${isVisible['how-it-works'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        {/* How It Works */}
+        <section id="how-it-works" className={`w-full max-w-6xl mx-auto flex flex-col items-center gap-12 my-20 transition-all duration-1000 ${sectionVisibility['how-it-works'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="text-center space-y-3">
             <h2 className="font-display text-4xl font-semibold text-text-primary">How It Works</h2>
             <p className="text-text-muted text-lg">Three simple steps to your perfect build</p>
@@ -200,13 +222,14 @@ export default function Page() {
         </section>
 
         {/* Minimal Features */}
-        <section id="features" className={`w-full max-w-7xl mx-auto my-20`}>
+        <section id="features" className={`w-full max-w-7xl mx-auto my-28`}>
+          <div className="absolute left-0 right-0 mx-auto h-32 bg-gradient-to-b from-accent/10 to-transparent rounded-t-3xl -z-10" />
           <div className="text-center space-y-4 mb-16">
             <h2 className="font-display text-4xl font-bold text-text-primary">Powerful Features</h2>
             <p className="text-text-muted text-lg max-w-2xl mx-auto">Everything you need to build the perfect PC with confidence</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="card p-8 space-y-4">
+            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +243,7 @@ export default function Page() {
               <p className="text-text-muted leading-relaxed">Live price updates from multiple retailers ensure you always get the best deal available.</p>
             </div>
             
-            <div className="card p-8 space-y-4">
+            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,7 +257,7 @@ export default function Page() {
               <p className="text-text-muted leading-relaxed">Advanced algorithms check for compatibility issues before you make any purchase decisions.</p>
             </div>
             
-            <div className="card p-8 space-y-4">
+            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +271,7 @@ export default function Page() {
               <p className="text-text-muted leading-relaxed">Track and compare all your builds with detailed performance metrics and cost analysis.</p>
             </div>
             
-            <div className="card p-8 space-y-4">
+            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,7 +285,7 @@ export default function Page() {
               <p className="text-text-muted leading-relaxed">Stay within budget with real-time cost calculations and intelligent spending alerts.</p>
             </div>
             
-            <div className="card p-8 space-y-4">
+            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +299,7 @@ export default function Page() {
               <p className="text-text-muted leading-relaxed">Step-by-step guides for assembly, cable management, and performance optimization.</p>
             </div>
             
-            <div className="card p-8 space-y-4">
+            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,7 +316,8 @@ export default function Page() {
         </section>
 
         {/* Minimal CTA Section */}
-        <section className="w-full max-w-5xl mx-auto my-20">
+        <section className="w-full max-w-5xl mx-auto my-24">
+          <div className="absolute left-0 right-0 mx-auto h-24 bg-gradient-to-t from-accent/10 to-transparent rounded-b-3xl -z-10" />
           <div className="p-12 rounded-lg border border-border/20 bg-surface-1/30 text-center">
             <h2 className="font-display text-3xl font-semibold text-text-primary mb-4">
               Ready to Build Your Dream PC?
