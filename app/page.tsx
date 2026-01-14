@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Divider } from '@/components/ui/divider';
+import { Button } from '../components/ui/button';
+import { Divider } from '../components/ui/divider';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
