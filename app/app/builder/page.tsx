@@ -195,7 +195,8 @@ export default function BuilderPage() {
 
   // RAM generation (DDR5/DDR4)
   if (selected.ram && selected.motherboard) {
-    const ramGen = selected.ram.speed?.includes('DDR5') ? 'DDR5' : selected.ram.speed?.includes('DDR4') ? 'DDR4' : undefined;
+    const ramSpeed = selected.ram.speed ? String(selected.ram.speed) : '';
+    const ramGen = ramSpeed.includes('DDR5') ? 'DDR5' : ramSpeed.includes('DDR4') ? 'DDR4' : undefined;
     const mbGen = selected.motherboard.chipset?.includes('B650') || selected.motherboard.chipset?.includes('Z690') ? 'DDR5' : 'DDR4';
     if (ramGen && ramGen !== mbGen) {
       issues.push('RAM generation does not match motherboard');
@@ -259,8 +260,8 @@ export default function BuilderPage() {
         </header>
         
         {/* Main Content */}
-        <main className="flex-1 w-full px-4 md:px-6 pt-24 pb-12">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 w-full px-2 md:px-0 pt-24 pb-12">
+          <div className="max-w-4xl mx-auto px-4 flex flex-col gap-8">
             {/* Preset Selection Step */}
             {showPresetStep && (
               <div className="mb-12">
@@ -339,204 +340,168 @@ export default function BuilderPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Preset Selection Panel */}
-              <div className="mb-8">
-                <h2 className="font-display text-xl font-bold mb-4 text-text-primary">Start with a Preset</h2>
-                <div className="flex flex-wrap gap-4">
-                  {PRESETS.map((preset) => (
-                    <button
-                      key={preset.name}
-                      className="px-4 py-2 rounded-lg border border-border bg-surface-2 hover:bg-accent/10 font-medium text-text-primary transition-all duration-200"
-                      onClick={() => {
-                        Object.entries(preset.parts).forEach(([cat, partId]) => {
-                          // Find the part in the current parts list for this category
-                          if (!Array.isArray(parts)) return;
-                          const match = parts.find((p: any) => p.id === partId);
-                          if (match) setPart(cat, match);
-                        });
-                      }}
-                      type="button"
-                    >
-                      <div className="font-semibold">{preset.name}</div>
-                      <div className="text-sm text-text-muted">${preset.budget.min}&ndash;${preset.budget.max}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Categories Panel */}
+            <div className="card p-6">
+              <h2 className="font-display text-2xl font-bold mb-6 text-text-primary">Categories</h2>
+              <nav className="flex flex-col gap-2 mb-6">
+                {PART_CATEGORIES.map((cat: { key: string; label: string }) => (
+                  <button
+                    key={cat.key}
+                    className={`text-left px-4 py-3 rounded-lg font-medium transition-all duration-200 ${activeCategory === cat.key ? 'bg-accent/20 text-accent border border-accent/30' : 'hover:bg-surface-2/60 text-text-primary border border-border/10'}`}
+                    onClick={() => setActiveCategory(cat.key)}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
 
-              {/* Parts Selection Panel */}
-              <div className="lg:col-span-1">
-                <div className="card p-6">
-                  <h2 className="font-display text-2xl font-bold mb-6 text-text-primary">Select Parts</h2>
-                  
-                  {/* Categories */}
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-lg mb-3 text-text-primary">Categories</h3>
-                    <nav className="flex flex-col gap-2">
-                      {PART_CATEGORIES.map((cat: { key: string; label: string }) => (
-                        <button
-                          key={cat.key}
-                          className={`text-left px-4 py-3 rounded-lg font-medium transition-all duration-200 ${activeCategory === cat.key ? 'bg-accent/20 text-accent border border-accent/30' : 'hover:bg-surface-2/60 text-text-primary border border-border/10'}`}
-                          onClick={() => setActiveCategory(cat.key)}
-                        >
-                          {cat.label}
-                        </button>
-                      ))}
-                    </nav>
+            {/* Parts List Panel */}
+            <div className="card p-6">
+              <h3 className="font-semibold text-lg mb-3 text-text-primary">Available Parts</h3>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {loading ? (
+                  <div className="space-y-2" aria-label="Loading parts">
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="animate-pulse rounded-lg bg-surface-2/60 h-14 w-full border border-border/10 flex items-center px-4"
+                      >
+                        <div className="h-4 w-1/4 bg-surface-1/80 rounded mr-4" />
+                        <div className="h-3 w-1/6 bg-surface-1/60 rounded" />
+                      </div>
+                    ))}
                   </div>
-                  
-                  {/* Parts List */}
+                ) : error ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <svg className="w-10 h-10 text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-red-400 font-semibold mb-1">We couldn’t load parts right now.</div>
+                    <div className="text-text-muted text-sm mb-2">Please check your connection or try again in a moment.</div>
+                    <button
+                      className="px-4 py-2 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30"
+                      onClick={() => {
+                        setError(null); setLoading(true);
+                        fetchParts(activeCategory)
+                          .then((res) => {
+                            if (res.error) {
+                              setError('Failed to load parts.');
+                              setParts([]);
+                            } else {
+                              setParts(
+                                (res.data || []).map((row: any) => ({
+                                  ...row.data,
+                                  id: row.id || row.data?.id,
+                                  name: row.name || row.data?.name,
+                                  price: row.data?.price,
+                                }))
+                              );
+                              setError(null);
+                            }
+                            setLoading(false);
+                          })
+                          .catch(() => {
+                            setError('Failed to load parts.');
+                            setLoading(false);
+                          });
+                      }}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : parts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <svg className="w-10 h-10 text-accent mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <div className="text-text-muted font-semibold mb-1">No parts found for this category.</div>
+                    <div className="text-text-muted text-sm">Try another category or check back later.</div>
+                  </div>
+                ) : (
+                  parts.map(part => (
+                    <button
+                      key={part.id}
+                      className={`block w-full text-left p-3 rounded-lg border transition-all duration-200 ${selected[activeCategory]?.id === part.id ? 'bg-accent/20 border-accent text-accent' : 'hover:bg-surface-2/80 border-border/10 text-text-primary'}`}
+                      onClick={() => setPart(activeCategory, part)}
+                    >
+                      <div className="font-semibold">{part.name || <span className="text-red-400">Unnamed Part</span>}</div>
+                      <div className="text-sm text-text-muted">${typeof part.price === 'number' ? part.price : '?'} {getPartLabel(activeCategory, part) || <span className="italic text-text-muted">Specs unavailable</span>}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Selected Part Details Panel */}
+            <div className="card p-6">
+              <h2 className="font-display text-2xl font-bold mb-4 text-text-primary">Selected Part Details</h2>
+              {selected[activeCategory] ? (
+                <div className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-lg mb-3 text-text-primary">Available Parts</h3>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {loading ? (
-                        <div className="space-y-2" aria-label="Loading parts">
-                          {[...Array(5)].map((_, i) => (
-                            <div
-                              key={i}
-                              className="animate-pulse rounded-lg bg-surface-2/60 h-14 w-full border border-border/10 flex items-center px-4"
-                            >
-                              <div className="h-4 w-1/4 bg-surface-1/80 rounded mr-4" />
-                              <div className="h-3 w-1/6 bg-surface-1/60 rounded" />
-                            </div>
-                          ))}
-                        </div>
-                      ) : error ? (
-                        <div className="flex flex-col items-center justify-center py-8">
-                          <svg className="w-10 h-10 text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <div className="text-red-400 font-semibold mb-1">We couldn’t load parts right now.</div>
-                          <div className="text-text-muted text-sm mb-2">Please check your connection or try again in a moment.</div>
-                          <button
-                            className="px-4 py-2 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30"
-                            onClick={() => {
-                              setError(null); setLoading(true);
-                              fetchParts(activeCategory)
-                                .then((res) => {
-                                  if (res.error) {
-                                    setError('Failed to load parts.');
-                                    setParts([]);
-                                  } else {
-                                    setParts(
-                                      (res.data || []).map((row: any) => ({
-                                        ...row.data,
-                                        id: row.id || row.data?.id,
-                                        name: row.name || row.data?.name,
-                                        price: row.data?.price,
-                                      }))
-                                    );
-                                    setError(null);
-                                  }
-                                  setLoading(false);
-                                })
-                                .catch(() => {
-                                  setError('Failed to load parts.');
-                                  setLoading(false);
-                                });
-                            }}
-                          >
-                            Retry
-                          </button>
-                        </div>
-                      ) : parts.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8">
-                          <svg className="w-10 h-10 text-accent mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                          <div className="text-text-muted font-semibold mb-1">No parts found for this category.</div>
-                          <div className="text-text-muted text-sm">Try another category or check back later.</div>
-                        </div>
-                      ) : (
-                        parts.map(part => (
-                          <button
-                            key={part.id}
-                            className={`block w-full text-left p-3 rounded-lg border transition-all duration-200 ${selected[activeCategory]?.id === part.id ? 'bg-accent/20 border-accent text-accent' : 'hover:bg-surface-2/80 border-border/10 text-text-primary'}`}
-                            onClick={() => setPart(activeCategory, part)}
-                          >
-                            <div className="font-semibold">{part.name || <span className="text-red-400">Unnamed Part</span>}</div>
-                            <div className="text-sm text-text-muted">${typeof part.price === 'number' ? part.price : '?'} {getPartLabel(activeCategory, part) || <span className="italic text-text-muted">Specs unavailable</span>}</div>
-                          </button>
-                        ))
-                      )}
-                    </div>
+                    <div className="font-semibold text-xl mb-2 text-text-primary">{selected[activeCategory].name}</div>
+                    <div className="text-2xl font-bold text-accent mb-4">${selected[activeCategory].price}</div>
+                  </div>
+                  <div className="bg-surface-2/50 rounded-lg p-4">
+                    <pre className="text-sm text-text-muted overflow-x-auto">
+                      {JSON.stringify(selected[activeCategory], null, 2)}
+                    </pre>
                   </div>
                 </div>
-              </div>
-              
-              {/* Main Content Area */}
-              <div className="lg:col-span-2 space-y-8">
-                {/* Selected Part Details */}
-                <div className="card p-6">
-                  <h2 className="font-display text-2xl font-bold mb-4 text-text-primary">Selected Part Details</h2>
-                  {selected[activeCategory] ? (
-                    <div className="space-y-4">
-                      <div>
-                        <div className="font-semibold text-xl mb-2 text-text-primary">{selected[activeCategory].name}</div>
-                        <div className="text-2xl font-bold text-accent mb-4">${selected[activeCategory].price}</div>
-                      </div>
-                      <div className="bg-surface-2/50 rounded-lg p-4">
-                        <pre className="text-sm text-text-muted overflow-x-auto">
-                          {JSON.stringify(selected[activeCategory], null, 2)}
-                        </pre>
-                      </div>
+              ) : (
+                <div className="text-text-muted text-center py-8">No part selected. Choose a category and select a part to view details.</div>
+              )}
+            </div>
+
+            {/* Budget and Compatibility Panel */}
+            <div className="card p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-display text-xl font-bold mb-4 text-text-primary">Budget</h3>
+                  <div className="text-3xl font-bold text-accent">${budget}</div>
+                  <div className="text-sm text-text-muted mt-2">Total build cost</div>
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold mb-4 text-text-primary">Compatibility</h3>
+                  {isCompatible ? (
+                    <div className="flex items-center gap-2">
+                      <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-green-400 font-semibold">Compatible</span>
                     </div>
                   ) : (
-                    <div className="text-text-muted text-center py-8">No part selected. Choose a category and select a part to view details.</div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-red-400 font-semibold">Issues Found</span>
+                      </div>
+                      <ul className="text-red-400 text-sm space-y-1">
+                        {issues.map((issue, i) => (
+                          <li key={i}>• {issue}</li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
-                
-                {/* Budget and Compatibility Panel */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="card p-6">
-                    <h3 className="font-display text-xl font-bold mb-4 text-text-primary">Budget</h3>
-                    <div className="text-3xl font-bold text-accent">${budget}</div>
-                    <div className="text-sm text-text-muted mt-2">Total build cost</div>
-                  </div>
-                  
-                  <div className="card p-6">
-                    <h3 className="font-display text-xl font-bold mb-4 text-text-primary">Compatibility</h3>
-                    {isCompatible ? (
-                      <div className="flex items-center gap-2">
-                        <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-green-400 font-semibold">Compatible</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-red-400 font-semibold">Issues Found</span>
-                        </div>
-                        <ul className="text-red-400 text-sm space-y-1">
-                          {issues.map((issue, i) => (
-                            <li key={i}>• {issue}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex gap-4 justify-center">
-                  <button 
-                    onClick={reset}
-                    className="px-6 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30"
-                  >
-                    Reset Build
-                  </button>
-                  <button 
-                    className="px-8 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
-                  >
-                    Save Build
-                  </button>
-                </div>
               </div>
+            </div>
+
+            {/* Action Buttons Panel */}
+            <div className="flex gap-4 justify-center">
+              <button 
+                onClick={reset}
+                className="px-6 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30"
+              >
+                Reset Build
+              </button>
+              <button 
+                className="px-8 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+              >
+                Save Build
+              </button>
             </div>
           </div>
         </main>
