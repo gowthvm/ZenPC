@@ -62,7 +62,7 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="w-full py-10 flex items-center justify-center">
         <div className="animate-pulse text-text-muted">Loading profile...</div>
       </div>
     );
@@ -70,7 +70,7 @@ export default function AccountPage() {
 
   if (!profile) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+      <div className="w-full py-10 flex flex-col items-center justify-center text-center px-4">
         <h2 className="text-2xl font-bold mb-4">Not Signed In</h2>
         <p className="text-text-muted mb-6">Please sign in to view your account details.</p>
         <div className="flex gap-4">
@@ -86,7 +86,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
+    <div className="w-full py-10 px-4 md:px-0 max-w-4xl mx-auto">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
         <div className="w-full md:w-64 flex-shrink-0">
@@ -202,32 +202,10 @@ export default function AccountPage() {
           {activeTab === 'security' && (
             <div className="card p-6">
               <h2 className="text-xl font-bold mb-6">Security</h2>
-              
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-medium mb-2">Password</h3>
-                  <p className="text-sm text-text-muted mb-4">
-                    Change your password to keep your account secure.
-                  </p>
-                  <Button variant="outline">
-                    Change Password
-                  </Button>
-                </div>
-
-                <div className="pt-4 border-t border-border/10">
-                  <h3 className="font-medium mb-2">Two-Factor Authentication</h3>
-                  <p className="text-sm text-text-muted mb-4">
-                    Add an extra layer of security to your account.
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {false ? 'Enabled' : 'Disabled'}
-                    </span>
-                    <Button variant={false ? 'outline' : 'default'}>
-                      {false ? 'Disable' : 'Enable'} 2FA
-                    </Button>
-                  </div>
-                </div>
+              <div className="space-y-4">
+                <p className="text-sm text-text-muted">
+                  Account security settings (password and two-factor authentication) will be managed from ZenPC soon.
+                </p>
               </div>
             </div>
           )}
@@ -250,7 +228,7 @@ export default function AccountPage() {
                   </svg>
                 </div>
                 <p className="text-text-muted mb-4">
-                  You don&apos;t have any saved builds yet.
+                  You don't have any saved builds yet.
                 </p>
                 <Link href="/app/builder">
                   <Button variant="default">

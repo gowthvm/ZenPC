@@ -49,7 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="flex h-screen bg-surface-1 text-text-primary overflow-hidden">
+    <div className="flex h-screen bg-surface-1/95 text-text-primary backdrop-blur-glass overflow-hidden transition-base">
       {/* Mobile sidebar backdrop */}
       {isSidebarOpen && (
         <div 
@@ -153,7 +153,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="container mx-auto p-4 md:p-8 max-w-7xl">
+          <div className="container mx-auto px-4 md:px-8 max-w-7xl">
             {children}
           </div>
         </main>

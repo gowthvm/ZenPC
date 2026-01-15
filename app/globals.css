@@ -122,7 +122,6 @@
   .card:hover {
     @apply border-accent/20;
     box-shadow: 0 6px 32px 0 rgb(99 112 241 / 0.08), 0 1.5px 0 rgb(255 255 255 / 0.04) inset;
-    transform: scale(1.015);
   }
   .btn {
     @apply transition-transform duration-base ease-premium active:scale-95 focus-visible:ring-2 focus-visible:ring-ring;

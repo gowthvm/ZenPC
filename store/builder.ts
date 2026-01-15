@@ -5,7 +5,7 @@ export type SelectedParts = Record<string, Part | undefined>;
 
 interface BuilderState {
   selected: SelectedParts;
-  setPart: (category: string, part: Part) => void;
+  setPart: (category: string, part: Part | undefined) => void;
   reset: () => void;
 }
 

@@ -73,7 +73,7 @@ export default function GuidePage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="w-full py-10 space-y-8">
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="font-display text-4xl font-bold text-text-primary">Build Guide</h1>
@@ -137,14 +137,14 @@ export default function GuidePage() {
                 <button
                   onClick={() => setActiveStep(Math.max(1, step.id - 1))}
                   disabled={step.id === 1}
-                  className="px-6 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-colors duration-200 hover:bg-surface-2/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous Step
                 </button>
                 <button
                   onClick={() => setActiveStep(Math.min(buildSteps.length, step.id + 1))}
                   disabled={step.id === buildSteps.length}
-                  className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {step.id === buildSteps.length ? 'Complete' : 'Next Step'}
                 </button>
@@ -170,9 +170,9 @@ export default function GuidePage() {
         <div className="card p-6">
           <h3 className="font-semibold text-lg mb-4 text-text-primary">Video Tutorials</h3>
           <p className="text-text-muted mb-4">Watch step-by-step video guides for visual learners.</p>
-          <button className="px-4 py-2 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-colors">
-            Coming Soon
-          </button>
+          <span className="inline-flex px-4 py-2 rounded-lg border border-border text-text-muted text-sm font-medium cursor-default">
+            Coming soon
+          </span>
         </div>
       </div>
     </div>
