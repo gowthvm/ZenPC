@@ -228,7 +228,7 @@ export default function AccountPage() {
                   </svg>
                 </div>
                 <p className="text-text-muted mb-4">
-                  You don't have any saved builds yet.
+                  You don&apos;t have any saved builds yet.
                 </p>
                 <Link href="/app/builder">
                   <Button variant="default">
