@@ -1,7 +1,6 @@
 // moved from app/app/builder/page.tsx
 'use client';
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useBuilderStore } from '@/store/builder';
 
@@ -47,6 +46,10 @@ const PRESET_USE_CASES: Record<string, string> = {
 
 export default function BuilderPage() {
   const { selected, setPart, reset } = useBuilderStore();
+  // Landing-style ambient cursor glow (purely visual)
+  const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 });
+  const rafRef = useRef<number>();
+  const [isClient, setIsClient] = useState(false);
   // Guided Mode state
   const [guidedMode, setGuidedMode] = useState(false);
   // Recommended build order
@@ -61,6 +64,17 @@ export default function BuilderPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [saveQueued, setSaveQueued] = useState(false);
+
+  // New feature states
+  const [comparingParts, setComparingParts] = useState<{ category: string; part1: any; part2: any } | null>(null);
+  const [replacePreview, setReplacePreview] = useState<{ category: string; oldPart: any; newPart: any } | null>(null);
+  const [buildVariants, setBuildVariants] = useState<Array<{ id: string; name: string; parts: Record<string, any> }>>([]);
+  const [activeVariantId, setActiveVariantId] = useState<string | null>(null);
+  const [showCompatibilities, setShowCompatibilities] = useState(true);
+  const [useCaseMode, setUseCaseMode] = useState<'Balanced' | 'Gaming' | 'Productivity' | 'Creator'>('Balanced');
+  const [showAdvancedInsights, setShowAdvancedInsights] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [assemblyReadyMode, setAssemblyReadyMode] = useState(false);
 
   // On mount: get user and restore build if logged in
   useEffect(() => {
@@ -81,6 +95,36 @@ export default function BuilderPage() {
       setInitialLoad(false);
     })();
   }, [setPart]);
+
+  // Smooth cursor effect with requestAnimationFrame (matches landing page motion style)
+  useEffect(() => {
+    setIsClient(true);
+
+    let targetX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
+    let targetY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isClient) return;
+      targetX = e.clientX;
+      targetY = e.clientY;
+    };
+
+    const animate = () => {
+      setSmoothPosition((prev) => ({
+        x: prev.x + (targetX - prev.x) * 0.1,
+        y: prev.y + (targetY - prev.y) * 0.1,
+      }));
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isClient]);
 
   // Auto-save build on meaningful changes (parts or name, skip initial load)
   useEffect(() => {
@@ -132,34 +176,112 @@ export default function BuilderPage() {
     );
   });
 
-  // Compatibility check: returns array of incompatibilities or empty
+  // Enhanced compatibility check with detailed explanations
   function checkCompatibility(parts: Record<string, any>) {
-    const issues = [];
-    // BIOS update requirement (placeholder)
-    if (parts.cpu && parts.motherboard && parts.cpu.socket !== parts.motherboard.socket) {
-      issues.push({
-        type: 'BIOS',
-        message: 'Motherboard may require BIOS update for selected CPU.',
-        fix: 'Check motherboard support list or request pre-flashed BIOS.'
-      });
+    const issues: Array<{
+      type: string;
+      severity: 'warning' | 'error';
+      message: string;
+      explanation: string;
+      fix: string;
+      affected: string[];
+    }> = [];
+    const compatibilities: Array<{
+      type: string;
+      message: string;
+      explanation: string;
+    }> = [];
+
+    // CPU-Motherboard socket compatibility
+    if (parts.cpu && parts.motherboard) {
+      if (parts.cpu.socket !== parts.motherboard.socket) {
+        issues.push({
+          type: 'Socket Mismatch',
+          severity: 'error',
+          message: `CPU socket (${parts.cpu.socket}) doesn't match motherboard socket (${parts.motherboard.socket}).`,
+          explanation: 'The CPU and motherboard must use the same socket type to physically connect. Different socket types are incompatible.',
+          fix: 'Select a CPU and motherboard with matching socket types, or check if the motherboard supports BIOS updates for newer CPUs.',
+          affected: ['cpu', 'motherboard']
+        });
+      } else {
+        compatibilities.push({
+          type: 'Socket Compatibility',
+          message: `CPU and motherboard sockets match (${parts.cpu.socket}).`,
+          explanation: 'Both components use the same socket type, ensuring they can physically connect and communicate properly.'
+        });
+      }
     }
-    // Power headroom (placeholder)
-    if (parts.psu && parts.gpu && parts.psu.wattage < (parts.gpu.tdp || 250) + 150) {
-      issues.push({
-        type: 'Power',
-        message: 'PSU wattage may be insufficient for selected GPU.',
-        fix: 'Choose a PSU with higher wattage.'
-      });
+
+    // RAM-Motherboard compatibility
+    if (parts.ram && parts.motherboard) {
+      const ramSpeed = parts.ram.speed || parts.ram.data?.speed;
+      const mbMaxSpeed = parts.motherboard.max_ram_speed || parts.motherboard.data?.max_ram_speed;
+      if (mbMaxSpeed && ramSpeed && ramSpeed > mbMaxSpeed) {
+        issues.push({
+          type: 'RAM Speed',
+          severity: 'warning',
+          message: `RAM speed (${ramSpeed}MHz) exceeds motherboard maximum (${mbMaxSpeed}MHz).`,
+          explanation: 'The RAM will run at the motherboard\'s maximum supported speed, not its rated speed. You won\'t get the full performance benefit.',
+          fix: 'Select RAM that matches or is below the motherboard\'s maximum supported speed, or choose a motherboard that supports higher speeds.',
+          affected: ['ram', 'motherboard']
+        });
+      } else if (ramSpeed && mbMaxSpeed && ramSpeed <= mbMaxSpeed) {
+        compatibilities.push({
+          type: 'RAM Compatibility',
+          message: `RAM speed (${ramSpeed}MHz) is compatible with motherboard (supports up to ${mbMaxSpeed}MHz).`,
+          explanation: 'The RAM will run at its rated speed, providing optimal performance.'
+        });
+      }
     }
-    // Physical clearance (placeholder)
-    if (parts.case && parts.gpu && parts.case.gpu_max_length && parts.gpu.length && parts.gpu.length > parts.case.gpu_max_length) {
-      issues.push({
-        type: 'Clearance',
-        message: 'GPU may not fit in selected case.',
-        fix: 'Check case GPU clearance or select a shorter GPU.'
-      });
+
+    // Power supply wattage check
+    if (parts.psu && parts.gpu) {
+      const psuWattage = parts.psu.wattage || parts.psu.data?.wattage;
+      const gpuTdp = parts.gpu.tdp || parts.gpu.data?.tdp || 250;
+      const cpuTdp = parts.cpu?.tdp || parts.cpu?.data?.tdp || 100;
+      const estimatedLoad = gpuTdp + cpuTdp + 150; // Base system overhead
+      
+      if (psuWattage < estimatedLoad) {
+        issues.push({
+          type: 'Power Supply',
+          severity: 'error',
+          message: `PSU wattage (${psuWattage}W) may be insufficient for this build.`,
+          explanation: `Your GPU (${gpuTdp}W) and CPU (${cpuTdp}W) combined with system overhead need approximately ${estimatedLoad}W. Your PSU provides ${psuWattage}W, which may cause instability under load.`,
+          fix: `Select a PSU with at least ${estimatedLoad}W (${Math.ceil(estimatedLoad / 50) * 50}W recommended for headroom).`,
+          affected: ['psu', 'gpu', 'cpu']
+        });
+      } else {
+        compatibilities.push({
+          type: 'Power Supply',
+          message: `PSU (${psuWattage}W) provides adequate power for this build.`,
+          explanation: `Your components need approximately ${estimatedLoad}W, and your PSU provides ${psuWattage}W, giving you ${psuWattage - estimatedLoad}W of headroom.`
+        });
+      }
     }
-    return issues;
+
+    // GPU-Case clearance check
+    if (parts.case && parts.gpu) {
+      const caseMaxLength = parts.case.gpu_max_length || parts.case.data?.gpu_max_length;
+      const gpuLength = parts.gpu.length || parts.gpu.data?.length;
+      if (caseMaxLength && gpuLength && gpuLength > caseMaxLength) {
+        issues.push({
+          type: 'Physical Clearance',
+          severity: 'error',
+          message: `GPU length (${gpuLength}mm) exceeds case maximum (${caseMaxLength}mm).`,
+          explanation: 'The GPU is too long to fit in the selected case. It will physically block installation.',
+          fix: 'Select a shorter GPU or a case with greater GPU clearance.',
+          affected: ['gpu', 'case']
+        });
+      } else if (caseMaxLength && gpuLength && gpuLength <= caseMaxLength) {
+        compatibilities.push({
+          type: 'GPU Clearance',
+          message: `GPU (${gpuLength}mm) fits comfortably in case (supports up to ${caseMaxLength}mm).`,
+          explanation: 'The GPU will fit with adequate clearance for installation and airflow.'
+        });
+      }
+    }
+
+    return { issues, compatibilities };
   }
 
   // Show warning for missing parts or incompatibilities
@@ -180,9 +302,10 @@ export default function BuilderPage() {
     });
     Object.entries(parts).forEach(([cat, part]) => setPart(cat, part));
     // Compatibility check
-    const incompat = checkCompatibility(parts);
-    if (incompat.length > 0) {
-      window.alert('Compatibility issues detected: ' + incompat.join(', '));
+    const { issues } = checkCompatibility(parts);
+    if (issues.length > 0) {
+      const issueMessages = issues.map(i => i.message).join('\n');
+      window.alert('Compatibility issues detected:\n\n' + issueMessages);
     }
   }
   const [partsByCategory, setPartsByCategory] = useState<Record<string, any[]>>({});
@@ -282,11 +405,322 @@ export default function BuilderPage() {
   const handleSelectPart = (category: string, partId: string) => {
     const categoryParts = partsByCategory[category] ?? [];
     const part = categoryParts.find((p: any) => p.id === partId);
+    const oldPart = selected[category];
+    
+    // Show replace preview if replacing an existing part
+    if (oldPart && part && oldPart.id !== part.id) {
+      setReplacePreview({ category, oldPart, newPart: part });
+      return; // Don't set yet, wait for confirmation
+    }
+    
     if (part) {
       setPart(category, part);
     } else {
       setPart(category, undefined);
     }
+  };
+
+  const confirmReplace = () => {
+    if (replacePreview) {
+      setPart(replacePreview.category, replacePreview.newPart);
+      setReplacePreview(null);
+    }
+  };
+
+  const cancelReplace = () => {
+    setReplacePreview(null);
+  };
+
+  // Build completion check
+  const getBuildCompletion = () => {
+    const required = ['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case'];
+    const completed = required.filter(cat => selected[cat]);
+    return {
+      completed: completed.length,
+      total: required.length,
+      percentage: Math.round((completed.length / required.length) * 100),
+      missing: required.filter(cat => !selected[cat])
+    };
+  };
+
+  // Build health status
+  const getBuildHealth = () => {
+    const { issues } = checkCompatibility(selected);
+    const completion = getBuildCompletion();
+    
+    if (issues.length === 0 && completion.completed === completion.total) {
+      return { status: 'ready', label: 'Build Ready', color: 'text-green-400', bgColor: 'bg-green-500/10', borderColor: 'border-green-500/30' };
+    }
+    if (issues.length === 0) {
+      return { status: 'clear', label: 'All Clear', color: 'text-green-400', bgColor: 'bg-green-500/10', borderColor: 'border-green-500/30' };
+    }
+    if (issues.filter(i => i.severity === 'error').length > 0) {
+      return { status: 'critical', label: 'Critical Issues', color: 'text-red-400', bgColor: 'bg-red-500/10', borderColor: 'border-red-500/30' };
+    }
+    return { status: 'attention', label: 'Needs Attention', color: 'text-yellow-300', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/30' };
+  };
+
+  // Budget status
+  const getBudgetStatus = () => {
+    if (!budgetMax) return null;
+    const percentage = (currentBudget / budgetMax) * 100;
+    if (currentBudget >= budgetMax) {
+      return { status: 'over', label: 'Over Budget', color: 'text-red-400', percentage };
+    }
+    if (percentage >= 95) {
+      return { status: 'near', label: 'Near Budget', color: 'text-yellow-300', percentage };
+    }
+    return { status: 'under', label: 'Under Budget', color: 'text-green-400', percentage };
+  };
+
+  // Duplicate build for variants
+  const duplicateBuild = () => {
+    const variantName = `${buildName} (Copy ${buildVariants.length + 1})`;
+    const newVariant = {
+      id: `variant-${Date.now()}`,
+      name: variantName,
+      parts: { ...selected }
+    };
+    setBuildVariants([...buildVariants, newVariant]);
+  };
+
+  // Switch variant
+  const switchVariant = (variantId: string) => {
+    const variant = buildVariants.find(v => v.id === variantId);
+    if (variant) {
+      Object.entries(variant.parts).forEach(([cat, part]) => {
+        setPart(cat, part);
+      });
+      setActiveVariantId(variantId);
+    }
+  };
+
+  const getSelectedPrice = (part: any) => {
+    const p = part?.data?.price;
+    return typeof p === 'number' && !isNaN(p) ? p : 0;
+  };
+
+  const getUseCaseGuidance = () => {
+    switch (useCaseMode) {
+      case 'Gaming':
+        return 'Prioritize GPU value and sufficient PSU headroom; CPU should be “good enough” to avoid leaving FPS on the table.';
+      case 'Productivity':
+        return 'Prioritize CPU cores, RAM capacity, and reliable storage; GPU matters less unless your workload uses it.';
+      case 'Creator':
+        return 'Aim for balanced CPU + GPU and plenty of RAM; stability and cooling matter more for long renders.';
+      default:
+        return 'A balanced build favors overall stability, sensible budget allocation, and upgrade headroom.';
+    }
+  };
+
+  // Performance expectations (informational heuristics; no fake benchmarks)
+  const getPerformanceExpectations = () => {
+    const cpu = selected.cpu;
+    const gpu = selected.gpu;
+    const ram = selected.ram;
+    const storage = selected.storage;
+
+    const cpuCores = cpu?.cores ?? cpu?.data?.cores;
+    const gpuPerf = gpu?.data?.performance;
+    const vram = gpu?.vram ?? gpu?.data?.vram;
+    const ramSize = ram?.data?.size ?? ram?.size;
+    const hasSSD = (storage?.type ?? storage?.data?.type)?.toString()?.toLowerCase()?.includes('ssd');
+
+    const labels: string[] = [];
+
+    if (gpu) {
+      if (gpuPerf === 'high' || (typeof vram === 'number' && vram >= 12)) labels.push('Suitable for 1440p gaming in most titles');
+      else if (gpuPerf === 'medium' || (typeof vram === 'number' && vram >= 8)) labels.push('Suitable for 1080p gaming');
+      else labels.push('Best for esports / lighter 1080p workloads');
+    } else {
+      labels.push('No GPU selected yet — gaming expectations depend heavily on the GPU');
+    }
+
+    if (typeof cpuCores === 'number') {
+      if (cpuCores >= 12) labels.push('Optimized for productivity and heavy multitasking');
+      else if (cpuCores >= 8) labels.push('Good for productivity and everyday workloads');
+      else labels.push('Solid for general use; heavy multitasking may feel constrained');
+    }
+
+    if (useCaseMode === 'Creator' || useCaseMode === 'Productivity') {
+      if (gpu && (gpuPerf === 'high' || (typeof vram === 'number' && vram >= 12))) labels.push('Good for 3D rendering / GPU-accelerated creation');
+      else labels.push('Creator workloads may benefit from a stronger GPU (depending on your apps)');
+    }
+
+    if (typeof ramSize === 'number') {
+      if (ramSize >= 32) labels.push('32GB+ RAM is comfortable for creator workloads');
+      else if (ramSize >= 16) labels.push('16GB RAM is a solid baseline');
+      else labels.push('Consider 16GB+ RAM for smoother modern workloads');
+    }
+
+    if (storage) labels.push(hasSSD ? 'SSD selected — good for responsiveness and load times' : 'Non‑SSD storage may feel slower for OS/app load times');
+
+    return labels;
+  };
+
+  const getUpgradeLongevityInsights = () => {
+    const insights: string[] = [];
+    const cpu = selected.cpu;
+    const motherboard = selected.motherboard;
+    const psu = selected.psu;
+    const gpu = selected.gpu;
+    const pcCase = selected.case;
+
+    const socket = cpu?.socket ?? cpu?.data?.socket;
+    const mbSocket = motherboard?.socket ?? motherboard?.data?.socket;
+    if (socket && mbSocket && socket === mbSocket) {
+      insights.push(`Platform socket match (${socket}) helps future CPU upgrades within the same platform family.`);
+    }
+
+    if (psu && gpu) {
+      const psuW = psu?.wattage ?? psu?.data?.wattage ?? 0;
+      const gpuTdp = gpu?.tdp ?? gpu?.data?.tdp ?? 250;
+      const cpuTdp = selected.cpu?.tdp ?? selected.cpu?.data?.tdp ?? 100;
+      const est = gpuTdp + cpuTdp + 150;
+      const headroom = psuW - est;
+      if (psuW > 0) {
+        if (headroom >= 200) insights.push(`PSU headroom looks healthy (+${headroom}W est.). This supports future GPU upgrades without replacing the PSU.`);
+        else if (headroom >= 0) insights.push(`PSU headroom is modest (+${headroom}W est.). Future GPU upgrades may require a PSU upgrade.`);
+      }
+    }
+
+    const caseMax = pcCase?.gpu_max_length ?? pcCase?.data?.gpu_max_length;
+    if (typeof caseMax === 'number') {
+      if (caseMax >= 360) insights.push('Case GPU clearance is generous — easier future GPU upgrades.');
+      else if (caseMax >= 300) insights.push('Case GPU clearance is reasonable — check longer GPUs before upgrading.');
+      else insights.push('Case GPU clearance is tight — future GPU upgrades may be constrained.');
+    }
+
+    return insights;
+  };
+
+  const getRealWorldWarnings = () => {
+    const warnings: Array<{ title: string; message: string }> = [];
+    const cpuTdp = selected.cpu?.tdp ?? selected.cpu?.data?.tdp;
+    const gpuTdp = selected.gpu?.tdp ?? selected.gpu?.data?.tdp;
+    const psuW = selected.psu?.wattage ?? selected.psu?.data?.wattage;
+
+    if (typeof cpuTdp === 'number' && cpuTdp >= 125) {
+      warnings.push({
+        title: 'Cooling adequacy',
+        message: 'This CPU is likely to benefit from a strong cooler and good case airflow, especially under sustained load.',
+      });
+    }
+
+    if (typeof gpuTdp === 'number' && gpuTdp >= 300) {
+      warnings.push({
+        title: 'Noise considerations',
+        message: 'High-power GPUs can get loud under load depending on case airflow and fan curves. Plan for airflow and acoustic expectations.',
+      });
+    }
+
+    if (typeof psuW === 'number' && psuW > 0) {
+      const cpu = typeof cpuTdp === 'number' ? cpuTdp : 100;
+      const gpu = typeof gpuTdp === 'number' ? gpuTdp : 250;
+      const est = cpu + gpu + 150;
+      warnings.push({
+        title: 'Power draw under load',
+        message: `Estimated peak load is roughly ~${est}W (very approximate). Good PSU headroom improves stability.`,
+      });
+    }
+
+    return warnings;
+  };
+
+  const getValueSignals = () => {
+    const signals: Array<{ title: string; message: string }> = [];
+    const cpuPrice = getSelectedPrice(selected.cpu);
+    const gpuPrice = getSelectedPrice(selected.gpu);
+    const ramSize = selected.ram?.data?.size ?? selected.ram?.size;
+
+    if (cpuPrice && gpuPrice) {
+      if (useCaseMode === 'Gaming' && cpuPrice > gpuPrice * 0.9) {
+        signals.push({
+          title: 'Value balance',
+          message: 'This CPU may be underutilized with the selected GPU for gaming. Consider reallocating budget toward the GPU if FPS is the goal.',
+        });
+      }
+      if (useCaseMode !== 'Gaming' && gpuPrice > cpuPrice * 1.6) {
+        signals.push({
+          title: 'Value balance',
+          message: 'GPU spend is high relative to CPU. If your workload is CPU-heavy, consider a stronger CPU or reallocating budget.',
+        });
+      }
+    }
+
+    if (useCaseMode === 'Creator' && typeof ramSize === 'number' && ramSize < 32) {
+      signals.push({
+        title: 'Creator comfort',
+        message: 'Creator workloads often feel better with 32GB+ RAM, especially with large projects or multitasking.',
+      });
+    }
+
+    return signals;
+  };
+
+  const getSummaryText = () => {
+    const completion = getBuildCompletion();
+    const health = getBuildHealth();
+    const { issues } = checkCompatibility(selected);
+
+    const lines: string[] = [];
+    lines.push('ZenPC Build Summary');
+    lines.push(`Name: ${buildName}`);
+    lines.push(`Use case: ${useCaseMode}`);
+    lines.push(`Status: ${health.label}`);
+    lines.push(`Completion: ${completion.completed}/${completion.total} (${completion.percentage}%)`);
+    lines.push(`Estimated total: $${currentBudget.toFixed(2)}`);
+    if (budgetMax) lines.push(`Budget: $${budgetMin || 0} - $${budgetMax}`);
+    lines.push('');
+    lines.push('Parts:');
+    for (const { key, label } of PART_CATEGORIES) {
+      const part = selected[key];
+      const price = getSelectedPrice(part);
+      lines.push(`- ${label}: ${part?.name || '—'}${price ? ` ($${price.toFixed(2)})` : ''}`);
+    }
+    lines.push('');
+    lines.push('Compatibility:');
+    if (issues.length === 0) lines.push('- No issues detected by ZenPC checks (heuristic).');
+    else issues.forEach((i) => lines.push(`- ${i.severity.toUpperCase()}: ${i.type} — ${i.message} | Fix: ${i.fix}`));
+    lines.push('');
+    lines.push('Performance expectations (informational):');
+    getPerformanceExpectations().forEach((l) => lines.push(`- ${l}`));
+    lines.push('');
+    lines.push('Upgrade & longevity insights (informational):');
+    const up = getUpgradeLongevityInsights();
+    if (up.length === 0) lines.push('- Add core parts to unlock platform/upgrade insights.');
+    else up.forEach((l) => lines.push(`- ${l}`));
+    lines.push('');
+    lines.push('Real-world advisories (informational):');
+    const rw = getRealWorldWarnings();
+    if (rw.length === 0) lines.push('- None');
+    else rw.forEach((w) => lines.push(`- ${w.title}: ${w.message}`));
+    lines.push('');
+    lines.push('Cost-to-value signals (informational):');
+    const vs = getValueSignals();
+    if (vs.length === 0) lines.push('- None');
+    else vs.forEach((s) => lines.push(`- ${s.title}: ${s.message}`));
+    return lines.join('\n');
+  };
+
+  const copySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(getSummaryText());
+    } catch {
+      // ignore; user can select text manually
+    }
+  };
+
+  const downloadSummary = () => {
+    const blob = new Blob([getSummaryText()], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${buildName.replace(/[^\w\- ]+/g, '').trim() || 'zenpc-build'}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   const handleApplyPreset = (presetName: string) => {
@@ -313,24 +747,72 @@ export default function BuilderPage() {
 	}, 0);
 
 	return (
-		<div className="w-full py-10 space-y-8">
+		<div className="relative w-full min-h-dvh overflow-hidden">
+      {/* Ambient background layers (landing-consistent) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 -z-10"
+      >
+        <div
+          style={{
+            position: 'absolute',
+            width: '600px',
+            height: '600px',
+            borderRadius: '50%',
+            background:
+              'radial-gradient(circle at center, rgba(99, 102, 241, 0.30) 0%, rgba(99, 102, 241, 0.10) 50%, transparent 70%)',
+            left: `${smoothPosition.x}px`,
+            top: `${smoothPosition.y}px`,
+            transform: 'translate(-50%, -50%)',
+            filter: 'blur(30px)',
+            willChange: 'transform',
+            transition: 'opacity 0.3s ease-out',
+            opacity: 1,
+          }}
+        />
+        <div className="absolute left-0 right-0 top-0 mx-auto h-64 bg-gradient-to-b from-accent/10 to-transparent" />
+        <div className="absolute -left-24 top-40 h-72 w-72 rounded-full bg-purple-600/10 blur-3xl" />
+        <div className="absolute -right-24 top-80 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-10 space-y-8">
 			{/* Guided Mode Toggle */}
-			<div className="flex items-center justify-between">
+			<div className="card p-5 md:p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-6">
 				<div className="flex items-center gap-4">
-					<h1 className="font-display text-3xl font-bold text-text-primary">PC Builder</h1>
+					<h1 className="font-display text-3xl md:text-4xl font-bold bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">
+            PC Builder
+          </h1>
+          <div className="hidden lg:flex items-center gap-2 ml-2">
+            {(['Balanced', 'Gaming', 'Productivity', 'Creator'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setUseCaseMode(m)}
+                className={`px-3 py-1.5 rounded-full text-xs border transition-base ${
+                  useCaseMode === m
+                    ? 'bg-surface-1/60 border-accent/30 text-accent shadow-glass'
+                    : 'bg-surface-1/30 border-border/20 text-text-muted hover:bg-surface-2/40 hover:text-text-primary'
+                }`}
+                aria-pressed={useCaseMode === m}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
 					<label className="flex items-center gap-2 ml-4">
             <input
               type="checkbox"
               checked={guidedMode}
               onChange={e => setGuidedMode(e.target.checked)}
-              className="accent-accent h-4 w-4 rounded focus:ring-accent/40 border border-border/40 transition"
+              className="accent-accent h-4 w-4 rounded border border-border/30 bg-surface-1/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
             />
             						<span className="text-sm font-medium text-text-primary">Guided Mode</span>
 					</label>
 					{/* Quick Jump Dropdown */}
           <select
             aria-label="Quick jump to category"
-            className="ml-4 px-2 py-1 rounded border border-border/40 text-sm bg-surface-1/60"
+            className="ml-4 px-3 py-2 rounded-md border border-border/20 text-sm bg-surface-1/50 backdrop-blur-glass shadow-glass/30 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
             onChange={e => {
               const el = document.getElementById(`cat-${e.target.value}`);
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -349,36 +831,67 @@ export default function BuilderPage() {
 					</p>
 				</div>
         </div>
-        <div className="flex gap-3">
+        <div className="text-xs text-text-muted">
+          <span className="text-text-primary font-medium">Use-case:</span> {useCaseMode} — {getUseCaseGuidance()}
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={duplicateBuild}
+            className="px-4 py-2 rounded-lg border border-border/20 bg-surface-1/35 backdrop-blur-glass text-sm font-medium hover:bg-surface-2/50 hover:border-border/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] shadow-glass/30 transition-base"
+          >
+            Duplicate Build
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSummary(true)}
+            className="px-4 py-2 rounded-lg border border-border/20 bg-surface-1/35 backdrop-blur-glass text-sm font-medium hover:bg-surface-2/50 hover:border-border/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] shadow-glass/30 transition-base"
+          >
+            Summary & Export
+          </button>
+          <button
+            type="button"
+            onClick={() => setAssemblyReadyMode((v) => !v)}
+            className={`px-4 py-2 rounded-lg border bg-surface-1/35 backdrop-blur-glass text-sm font-medium shadow-glass/30 transition-base hover:bg-surface-2/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] ${
+              assemblyReadyMode ? 'border-accent/30 text-accent' : 'border-border/20 text-text-primary'
+            }`}
+            aria-pressed={assemblyReadyMode}
+          >
+            {assemblyReadyMode ? 'Exit Assembly Ready' : 'Assembly Ready'}
+          </button>
           <button
             type="button"
             onClick={reset}
-            className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-surface-2/40 transition-colors"
+            className="px-4 py-2 rounded-lg border border-border/20 bg-surface-1/35 backdrop-blur-glass text-sm font-medium hover:bg-surface-2/50 hover:border-border/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] shadow-glass/30 transition-base"
           >
             Reset Build
           </button>
           <Link
             href="/app"
-            className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors"
+            className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] shadow-lg hover:shadow-xl transition-base"
           >
             Back to Dashboard
           </Link>
         </div>
+      </div>
 
         <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-4">
           {loading && (
             <div className="card p-6">
-              <div className="animate-pulse text-text-muted">Loading parts...</div>
+              <div className="animate-pulse space-y-3">
+                <div className="h-4 w-40 rounded bg-surface-2/60" />
+                <div className="h-3 w-64 rounded bg-surface-2/50" />
+              </div>
             </div>
           )}
 
           {error && (
-            <div className="card p-4 border border-red-500/40 text-red-300 text-sm flex items-center gap-2">
-              <span>Failed to load parts. Please check your connection or try again.</span>
+            <div className="card p-4 border border-red-500/30 bg-surface-1/40 text-red-200 text-sm flex items-center gap-2">
+              <span className="text-red-200/90">Failed to load parts. Please check your connection or try again.</span>
               <button
                 type="button"
-                className="underline text-accent text-xs ml-auto"
+                className="ml-auto px-3 py-1.5 rounded-md bg-surface-2/50 border border-border/20 text-xs text-text-primary hover:bg-surface-2/70 hover:border-border/30 transition-base"
                 onClick={() => window.location.reload()}
               >
                 Retry
@@ -395,7 +908,16 @@ export default function BuilderPage() {
             						return (
 							<div
 								key={key}
-								className={`card p-4${isNext ? ' ring-2 ring-accent/60 ring-offset-2' : ''}`}
+								id={`cat-${key}`}
+								className={`card p-5 md:p-6 ${
+                  isNext
+                    ? 'ring-2 ring-accent/60 ring-offset-2 ring-offset-bg shadow-glass'
+                    : ''
+                } ${
+                  selectedPart
+                    ? 'border-accent/25 shadow-glass hover:border-accent/30'
+                    : ''
+                }`}
 							>
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -413,14 +935,37 @@ export default function BuilderPage() {
                         : '--'}
                     </div>
                     {selectedPart && (
-                      <button
-                        className="ml-1 px-2 py-1 rounded bg-surface-2/60 border border-border/40 text-xs hover:bg-red-100/30 text-red-500 transition-colors"
-                        onClick={() => setPart(key, undefined)}
-                        tabIndex={0}
-                        aria-label={`Replace ${label}`}
-                      >
-                        Replace
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {parts.length >= 2 && (
+                          <button
+                            className="px-3 py-1.5 rounded-md bg-surface-1/50 border border-border/20 text-xs text-text-primary hover:bg-surface-2/50 hover:border-accent/30 transition-base"
+                            onClick={() => {
+                              // If already comparing this category, close it
+                              if (comparingParts?.category === key) {
+                                setComparingParts(null);
+                              } else {
+                                // Start comparison with selected part and first other part
+                                const otherPart = parts.find((p: any) => p.id !== selectedPart.id);
+                                if (otherPart) {
+                                  setComparingParts({ category: key, part1: selectedPart, part2: otherPart });
+                                }
+                              }
+                            }}
+                            tabIndex={0}
+                            aria-label={`Compare ${label}`}
+                          >
+                            {comparingParts?.category === key ? 'Close Compare' : 'Compare'}
+                          </button>
+                        )}
+                        <button
+                          className="px-3 py-1.5 rounded-md bg-surface-2/50 border border-border/20 text-xs text-text-primary hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-200 transition-base"
+                          onClick={() => setPart(key, undefined)}
+                          tabIndex={0}
+                          aria-label={`Clear ${label}`}
+                        >
+                          Clear
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -433,7 +978,7 @@ export default function BuilderPage() {
                   ) : (
                     <>
                       <select
-                        className="w-full px-3 py-2 rounded-md bg-surface-1/60 border border-border/40 text-sm"
+                        className="w-full px-3 py-2.5 rounded-md bg-surface-1/50 border border-border/20 text-sm shadow-glass/30 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
                         value={selectedPart?.id ?? ''}
                         onChange={(e) => handleSelectPart(key, e.target.value)}
                       >
@@ -444,6 +989,11 @@ export default function BuilderPage() {
                           </option>
                         ))}
                       </select>
+                      {assemblyReadyMode && selectedPart && (
+                        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 text-xs text-text-muted">
+                          ✓ Selected — {selectedPart.name}
+                        </div>
+                      )}
                       {parts.length === 0 && (
                         <p className="text-xs text-text-muted">
                           No parts available for this category yet.
@@ -458,12 +1008,12 @@ export default function BuilderPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="card p-4 space-y-3">
+          <div className="card p-5 md:p-6 space-y-3">
             <h2 className="font-semibold text-text-primary">Build Summary</h2>
             <div className="flex items-center justify-between mb-2">
               <input
                 type="text"
-                className="font-display text-lg font-bold bg-transparent outline-none border-none w-2/3"
+                className="font-display text-lg font-bold bg-transparent outline-none border-none w-2/3 placeholder:text-text-muted/60"
                 value={buildName}
                 onChange={handleBuildNameChange}
                 disabled={!user}
@@ -488,23 +1038,90 @@ export default function BuilderPage() {
               <span className="font-display text-2xl font-bold text-accent">
                 ${currentBudget.toFixed(2)}
               </span>
-              {(() => {
-                if (!budgetMin && !budgetMax) return null;
-                let status = 'Under Budget';
-                let color = 'text-green-500';
-                if (budgetMax && currentBudget >= budgetMax) {
-                  status = 'Over Budget';
-                  color = 'text-red-500';
-                } else if (budgetMax && currentBudget >= budgetMax * 0.95) {
-                  status = 'Near Budget';
-                  color = 'text-yellow-500';
-                }
-                return (
-                  <span className={`ml-2 text-xs font-semibold ${color}`}>{status}</span>
-                );
-              })()}
-
             </div>
+
+            {/* Budget Intelligence */}
+            {(() => {
+              const budgetStatus = getBudgetStatus();
+              if (!budgetStatus && !budgetMax) {
+                // Show category distribution if no budget set
+                const categoryTotals: Record<string, number> = {};
+                Object.entries(selected).forEach(([cat, part]) => {
+                  if (part?.data?.price) {
+                    categoryTotals[cat] = (categoryTotals[cat] || 0) + part.data.price;
+                  }
+                });
+                const hasDistribution = Object.keys(categoryTotals).length > 0;
+                
+                if (hasDistribution) {
+                  return (
+                    <div className="mt-3 p-3 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
+                      <div className="text-xs font-semibold text-text-primary mb-2">Budget Distribution:</div>
+                      <div className="space-y-1.5">
+                        {Object.entries(categoryTotals)
+                          .sort(([, a], [, b]) => b - a)
+                          .map(([cat, total]) => {
+                            const category = PART_CATEGORIES.find(c => c.key === cat);
+                            const percentage = (total / currentBudget) * 100;
+                            return (
+                              <div key={cat} className="flex items-center justify-between text-xs">
+                                <span className="text-text-muted">{category?.label || cat}:</span>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-24 h-1.5 rounded-full bg-surface-2/50 overflow-hidden">
+                                    <div 
+                                      className="h-full bg-accent rounded-full transition-all duration-base"
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-text-primary font-medium w-16 text-right">
+                                    ${total.toFixed(0)} ({percentage.toFixed(0)}%)
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }
+              
+              if (!budgetStatus) return null;
+              
+              return (
+                <div className={`mt-3 p-3 rounded-lg border ${budgetStatus.status === 'over' ? 'border-red-500/30 bg-red-500/10' : budgetStatus.status === 'near' ? 'border-yellow-500/30 bg-yellow-500/10' : 'border-green-500/30 bg-green-500/10'} backdrop-blur-glass`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-xs font-semibold ${budgetStatus.color}`}>
+                      {budgetStatus.label}
+                    </span>
+                    <span className="text-xs text-text-muted">
+                      {budgetStatus.percentage.toFixed(1)}% of budget
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-surface-2/50 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-base ${
+                        budgetStatus.status === 'over' ? 'bg-red-400' : 
+                        budgetStatus.status === 'near' ? 'bg-yellow-400' : 
+                        'bg-green-400'
+                      }`}
+                      style={{ width: `${Math.min(budgetStatus.percentage, 100)}%` }}
+                    />
+                  </div>
+                  {budgetStatus.status === 'near' && (
+                    <div className="mt-1 text-xs text-yellow-200">
+                      You're approaching your budget limit. Consider reviewing your selections.
+                    </div>
+                  )}
+                  {budgetStatus.status === 'over' && (
+                    <div className="mt-1 text-xs text-red-200">
+                      Your build exceeds the budget. Consider selecting more affordable components.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <p className="text-xs text-text-muted">
               This estimate uses prices from your selected parts.
             </p>
@@ -520,40 +1137,120 @@ export default function BuilderPage() {
               return (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {tags.map((tag, i) => (
-                    <span key={i} className="px-2 py-1 rounded-full bg-surface-1/60 text-xs text-accent border border-accent/40 font-medium">
+                    <span key={i} className="px-2 py-1 rounded-full bg-surface-1/45 backdrop-blur-glass text-xs text-accent border border-accent/25 font-medium shadow-glass/20">
                       {tag}
                     </span>
                   ))}
                 </div>
               );
             })()}
-            {/* Build Health & Confidence Indicator */}
+            {/* Build Health Indicator - Prominent */}
             {(() => {
-              const issues = checkCompatibility(selected);
-              let status = 'All Clear';
-              let statusColor = 'text-green-500';
-              if (issues && issues.length > 0) {
-                status = issues.length > 2 ? 'Critical Issues' : 'Needs Attention';
-                statusColor = issues.length > 2 ? 'text-red-500' : 'text-yellow-500';
-              }
+              const health = getBuildHealth();
+              const { issues, compatibilities } = checkCompatibility(selected);
+              const completion = getBuildCompletion();
+              
               return (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className={`font-semibold text-xs ${statusColor}`}>{status}</span>
-                  <span className="text-xs text-text-muted">({issues.length} issue{issues.length === 1 ? '' : 's'})</span>
+                <div className={`mt-4 p-4 rounded-lg border ${health.borderColor} ${health.bgColor} backdrop-blur-glass`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${health.color.replace('text-', 'bg-')}`} />
+                      <span className={`font-semibold text-sm ${health.color}`}>{health.label}</span>
+                    </div>
+                    {health.status === 'ready' && (
+                      <div className="px-2 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-xs text-green-400 font-medium">
+                        ✓ Ready to Build
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs text-text-muted space-y-1">
+                    <div>Completion: {completion.completed}/{completion.total} components ({completion.percentage}%)</div>
+                    {issues.length > 0 && (
+                      <div>{issues.length} compatibility issue{issues.length === 1 ? '' : 's'} found</div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
-            {/* Compatibility Insights */}
+
+            {/* Build Completion Checklist */}
             {(() => {
-              const issues = checkCompatibility(selected);
-              if (!issues || issues.length === 0) return null;
+              const completion = getBuildCompletion();
+              if (completion.missing.length === 0) return null;
+              
+              return (
+                <div className="mt-3 p-3 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
+                  <div className="text-xs font-semibold text-text-primary mb-2">Missing Components:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {completion.missing.map(cat => {
+                      const category = PART_CATEGORIES.find(c => c.key === cat);
+                      return (
+                        <span key={cat} className="px-2 py-1 rounded-md bg-surface-2/50 border border-border/20 text-xs text-text-muted">
+                          {category?.label || cat}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Compatibility Issues */}
+            {(() => {
+              const { issues } = checkCompatibility(selected);
+              if (issues.length === 0) return null;
+              
               return (
                 <div className="mt-3 space-y-2">
+                  <div className="text-xs font-semibold text-text-primary mb-1">Compatibility Issues:</div>
                   {issues.map((issue, idx) => (
-                    <div key={idx} className="p-2 rounded bg-yellow-100/30 border-l-4 border-yellow-400">
-                      <div className="font-semibold text-yellow-700 text-xs mb-1">{issue.type} Issue</div>
-                      <div className="text-xs text-yellow-900">{issue.message}</div>
-                      <div className="text-xs text-yellow-800 mt-1">Suggested fix: <span className="font-medium">{issue.fix}</span></div>
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-lg border ${
+                        issue.severity === 'error' 
+                          ? 'border-red-500/30 bg-red-500/10' 
+                          : 'border-yellow-500/30 bg-yellow-500/10'
+                      } backdrop-blur-glass`}
+                    >
+                      <div className={`font-semibold text-xs mb-1 ${
+                        issue.severity === 'error' ? 'text-red-300' : 'text-yellow-200'
+                      }`}>
+                        {issue.type}
+                      </div>
+                      <div className="text-xs text-text-primary/90 mb-1">{issue.message}</div>
+                      <div className="text-xs text-text-muted mb-2">{issue.explanation}</div>
+                      <div className="text-xs text-text-muted">
+                        <span className="font-medium text-text-primary/90">Fix:</span> {issue.fix}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Compatibility Confirmations */}
+            {showCompatibilities && (() => {
+              const { compatibilities } = checkCompatibility(selected);
+              if (compatibilities.length === 0) return null;
+              
+              return (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-xs font-semibold text-text-primary">Compatibility Confirmations:</div>
+                    <button
+                      onClick={() => setShowCompatibilities(false)}
+                      className="text-xs text-text-muted hover:text-text-primary transition-colors"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                  {compatibilities.map((comp, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2 rounded-lg border border-green-500/20 bg-green-500/5 backdrop-blur-glass"
+                    >
+                      <div className="text-xs font-medium text-green-300 mb-0.5">{comp.type}</div>
+                      <div className="text-xs text-text-muted">{comp.explanation}</div>
                     </div>
                   ))}
                 </div>
@@ -561,7 +1258,88 @@ export default function BuilderPage() {
             })()}
           </div>
 
-          <div className="card p-4 space-y-3">
+          <div className="card p-5 md:p-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm text-text-primary">Advanced Insights</h3>
+              <button
+                type="button"
+                onClick={() => setShowAdvancedInsights((v) => !v)}
+                className="px-3 py-1.5 rounded-md bg-surface-1/40 border border-border/20 text-xs text-text-primary hover:bg-surface-2/50 transition-base"
+                aria-expanded={showAdvancedInsights}
+              >
+                {showAdvancedInsights ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+
+            {showAdvancedInsights && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
+                  <div className="text-xs font-semibold text-text-primary mb-2">Performance expectations</div>
+                  <div className="space-y-2">
+                    {getPerformanceExpectations().map((t, i) => (
+                      <div key={i} className="text-xs text-text-muted">
+                        - {t}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
+                  <div className="text-xs font-semibold text-text-primary mb-2">Use-case aware guidance</div>
+                  <div className="text-xs text-text-muted">
+                    {getUseCaseGuidance()}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
+                  <div className="text-xs font-semibold text-text-primary mb-2">Upgrade & longevity insights</div>
+                  <div className="space-y-2">
+                    {getUpgradeLongevityInsights().length === 0 ? (
+                      <div className="text-xs text-text-muted">Add core parts to unlock platform/upgrade insights.</div>
+                    ) : (
+                      getUpgradeLongevityInsights().map((t, i) => (
+                        <div key={i} className="text-xs text-text-muted">
+                          - {t}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
+                  <div className="text-xs font-semibold text-text-primary mb-2">Real-world advisories</div>
+                  <div className="space-y-2">
+                    {getRealWorldWarnings().length === 0 ? (
+                      <div className="text-xs text-text-muted">No advisories yet.</div>
+                    ) : (
+                      getRealWorldWarnings().map((w, i) => (
+                        <div key={i} className="text-xs text-text-muted">
+                          - <span className="text-text-primary/90 font-medium">{w.title}:</span> {w.message}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
+                  <div className="text-xs font-semibold text-text-primary mb-2">Cost-to-value signals</div>
+                  <div className="space-y-2">
+                    {getValueSignals().length === 0 ? (
+                      <div className="text-xs text-text-muted">No value signals detected.</div>
+                    ) : (
+                      getValueSignals().map((s, i) => (
+                        <div key={i} className="text-xs text-text-muted">
+                          - <span className="text-text-primary/90 font-medium">{s.title}:</span> {s.message}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="card p-5 md:p-6 space-y-3">
             <h3 className="font-semibold text-sm text-text-primary">Presets</h3>
             {/* Budget input fields */}
             <form
@@ -572,7 +1350,7 @@ export default function BuilderPage() {
               <input
                 type="number"
                 min={0}
-                className="w-20 px-2 py-1 rounded border border-border/40 text-xs"
+                className="w-24 px-3 py-2 rounded-md border border-border/20 bg-surface-1/45 backdrop-blur-glass text-xs shadow-glass/20 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
                 placeholder="Min"
                 value={budgetMin}
                 onChange={e => setBudgetMin(Number(e.target.value))}
@@ -581,7 +1359,7 @@ export default function BuilderPage() {
               <input
                 type="number"
                 min={0}
-                className="w-20 px-2 py-1 rounded border border-border/40 text-xs"
+                className="w-24 px-3 py-2 rounded-md border border-border/20 bg-surface-1/45 backdrop-blur-glass text-xs shadow-glass/20 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
                 placeholder="Max"
                 value={budgetMax}
                 onChange={e => setBudgetMax(Number(e.target.value))}
@@ -606,8 +1384,13 @@ export default function BuilderPage() {
                     key={preset.name}
                     type="button"
                     onClick={() => handleApplyPresetWithChecks(preset)}
-                    className="w-full text-left px-3 py-2 rounded-md bg-surface-2/60 hover:bg-surface-2/90 transition-colors text-sm border"
-                    style={{ borderColor: overBudget ? '#f59e42' : missing ? '#f43f5e' : 'transparent' }}
+                    className={`w-full text-left px-4 py-3 rounded-lg bg-surface-1/35 backdrop-blur-glass text-sm border shadow-glass/20 hover:bg-surface-2/50 hover:-translate-y-0.5 active:translate-y-0 transition-base ${
+                      overBudget
+                        ? 'border-orange-400/30'
+                        : missing
+                          ? 'border-red-400/30'
+                          : 'border-border/20 hover:border-border/30'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{preset.name}</span>
@@ -629,6 +1412,300 @@ export default function BuilderPage() {
           </div>
         </div>
       </div>
+
+      {showSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="card p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg text-text-primary">Build Summary & Export</h3>
+              <button
+                onClick={() => setShowSummary(false)}
+                className="p-2 rounded-lg hover:bg-surface-2/50 transition-colors"
+                aria-label="Close summary"
+              >
+                <svg className="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4 rounded-lg bg-surface-1/30 border border-border/10">
+              <pre className="whitespace-pre-wrap text-xs text-text-primary/90 font-mono leading-relaxed">
+                {getSummaryText()}
+              </pre>
+            </div>
+
+            <div className="flex flex-wrap gap-3 mt-6">
+              <button
+                onClick={copySummary}
+                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-base hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+              >
+                Copy
+              </button>
+              <button
+                onClick={downloadSummary}
+                className="px-4 py-2 rounded-lg border border-border/20 bg-surface-1/50 text-text-primary text-sm font-medium hover:bg-surface-2/50 transition-base"
+              >
+                Download (.txt)
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 rounded-lg border border-border/20 bg-surface-1/50 text-text-primary text-sm font-medium hover:bg-surface-2/50 transition-base"
+              >
+                Print / PDF
+              </button>
+            </div>
+            <div className="mt-2 text-xs text-text-muted">
+              Tip: “Print / PDF” uses your browser’s print dialog for a PDF-ready export.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Replace Impact Preview Modal */}
+      {replacePreview && (() => {
+        const { issues: oldIssues } = checkCompatibility({ ...selected, [replacePreview.category]: replacePreview.oldPart });
+        const { issues: newIssues } = checkCompatibility({ ...selected, [replacePreview.category]: replacePreview.newPart });
+        const oldPrice = replacePreview.oldPart?.data?.price || 0;
+        const newPrice = replacePreview.newPart?.data?.price || 0;
+        const priceDiff = newPrice - oldPrice;
+        
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="font-semibold text-lg text-text-primary mb-4">Replace Part Impact Preview</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm font-medium text-text-primary mb-2">Replacing:</div>
+                  <div className="p-3 rounded-lg bg-surface-2/50 border border-border/20">
+                    <div className="font-medium text-text-primary">{replacePreview.oldPart.name}</div>
+                    <div className="text-xs text-text-muted mt-1">${oldPrice.toFixed(2)}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="text-sm font-medium text-text-primary mb-2">With:</div>
+                  <div className="p-3 rounded-lg bg-surface-1/60 border border-accent/30">
+                    <div className="font-medium text-accent">{replacePreview.newPart.name}</div>
+                    <div className="text-xs text-text-muted mt-1">${newPrice.toFixed(2)}</div>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-surface-1/40 border border-border/20">
+                  <div className="text-sm font-medium text-text-primary mb-2">Budget Impact:</div>
+                  <div className={`text-lg font-bold ${priceDiff > 0 ? 'text-red-400' : priceDiff < 0 ? 'text-green-400' : 'text-text-primary'}`}>
+                    {priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)} ({priceDiff > 0 ? 'increase' : priceDiff < 0 ? 'decrease' : 'no change'})
+                  </div>
+                  <div className="text-xs text-text-muted mt-1">
+                    New total: ${(currentBudget + priceDiff).toFixed(2)}
+                  </div>
+                </div>
+
+                {newIssues.length > oldIssues.length && (
+                  <div className="p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10">
+                    <div className="text-sm font-medium text-yellow-200 mb-1">⚠️ New Compatibility Issues:</div>
+                    <div className="text-xs text-text-muted">
+                      This change will introduce {newIssues.length - oldIssues.length} new compatibility issue{newIssues.length - oldIssues.length === 1 ? '' : 's'}.
+                    </div>
+                  </div>
+                )}
+
+                {newIssues.length < oldIssues.length && (
+                  <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/10">
+                    <div className="text-sm font-medium text-green-300 mb-1">✓ Compatibility Improved:</div>
+                    <div className="text-xs text-text-muted">
+                      This change will resolve {oldIssues.length - newIssues.length} compatibility issue{oldIssues.length - newIssues.length === 1 ? '' : 's'}.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={confirmReplace}
+                  className="flex-1 px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                >
+                  Confirm Replace
+                </button>
+                <button
+                  onClick={cancelReplace}
+                  className="flex-1 px-4 py-2 rounded-lg border border-border/20 bg-surface-1/50 text-text-primary font-medium hover:bg-surface-2/50 transition-all duration-base ease-premium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Part Comparison Modal */}
+      {comparingParts && (() => {
+        const { part1, part2, category } = comparingParts;
+        const categoryLabel = PART_CATEGORIES.find(c => c.key === category)?.label || category;
+        const categoryParts = partsByCategory[category] || [];
+        
+        const getComparisonFields = () => {
+          const fields: Array<{ label: string; getValue: (p: any) => string }> = [];
+          
+          if (category === 'cpu') {
+            fields.push(
+              { label: 'Cores', getValue: (p) => `${p.cores || p.data?.cores || 'N/A'}` },
+              { label: 'Socket', getValue: (p) => `${p.socket || p.data?.socket || 'N/A'}` },
+              { label: 'Base Clock', getValue: (p) => `${p.base_clock || p.data?.base_clock || 'N/A'} GHz` }
+            );
+          } else if (category === 'gpu') {
+            fields.push(
+              { label: 'VRAM', getValue: (p) => `${p.vram || p.data?.vram || 'N/A'} GB` },
+              { label: 'TDP', getValue: (p) => `${p.tdp || p.data?.tdp || 'N/A'} W` },
+              { label: 'Length', getValue: (p) => `${p.length || p.data?.length || 'N/A'} mm` }
+            );
+          } else if (category === 'motherboard') {
+            fields.push(
+              { label: 'Socket', getValue: (p) => `${p.socket || p.data?.socket || 'N/A'}` },
+              { label: 'Chipset', getValue: (p) => `${p.chipset || p.data?.chipset || 'N/A'}` },
+              { label: 'Max RAM Speed', getValue: (p) => `${p.max_ram_speed || p.data?.max_ram_speed || 'N/A'} MHz` }
+            );
+          } else if (category === 'ram') {
+            fields.push(
+              { label: 'Speed', getValue: (p) => `${p.speed || p.data?.speed || 'N/A'} MHz` },
+              { label: 'Size', getValue: (p) => `${p.size || p.data?.size || 'N/A'} GB` },
+              { label: 'Type', getValue: (p) => `${p.type || p.data?.type || 'DDR4'}` }
+            );
+          } else if (category === 'psu') {
+            fields.push(
+              { label: 'Wattage', getValue: (p) => `${p.wattage || p.data?.wattage || 'N/A'} W` },
+              { label: 'Efficiency', getValue: (p) => `${p.efficiency || p.data?.efficiency || 'N/A'}` },
+              { label: 'Modular', getValue: (p) => `${p.modular || p.data?.modular ? 'Yes' : 'No'}` }
+            );
+          }
+          
+          fields.push(
+            { label: 'Price', getValue: (p) => `$${(p.data?.price || 0).toFixed(2)}` }
+          );
+          
+          return fields;
+        };
+        
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="card p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-text-primary">Compare {categoryLabel}</h3>
+                <button
+                  onClick={() => setComparingParts(null)}
+                  className="p-2 rounded-lg hover:bg-surface-2/50 transition-colors"
+                >
+                  <svg className="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-xs font-medium text-text-muted">Specification</div>
+                <div className="text-xs font-medium text-text-primary text-center">{part1.name}</div>
+                <div className="text-xs font-medium text-text-primary text-center">{part2.name}</div>
+                
+                {getComparisonFields().map((field, idx) => (
+                  <>
+                    <div key={`label-${idx}`} className="text-xs text-text-muted py-2">{field.label}</div>
+                    <div key={`p1-${idx}`} className="text-xs text-text-primary text-center py-2 border-r border-border/10">
+                      {field.getValue(part1)}
+                    </div>
+                    <div key={`p2-${idx}`} className="text-xs text-text-primary text-center py-2">
+                      {field.getValue(part2)}
+                    </div>
+                  </>
+                ))}
+              </div>
+              
+              <div className="mt-4 p-3 rounded-lg bg-surface-1/30 border border-border/20">
+                <div className="text-xs font-medium text-text-primary mb-2">Compare different parts:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    className="px-2 py-1.5 rounded-md bg-surface-1/50 border border-border/20 text-xs"
+                    value={part1.id}
+                    onChange={(e) => {
+                      const newPart = categoryParts.find((p: any) => p.id === e.target.value);
+                      if (newPart) setComparingParts({ category, part1: newPart, part2 });
+                    }}
+                  >
+                    {categoryParts.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="px-2 py-1.5 rounded-md bg-surface-1/50 border border-border/20 text-xs"
+                    value={part2.id}
+                    onChange={(e) => {
+                      const newPart = categoryParts.find((p: any) => p.id === e.target.value);
+                      if (newPart) setComparingParts({ category, part1, part2: newPart });
+                    }}
+                  >
+                    {categoryParts.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setPart(category, part1);
+                    setComparingParts(null);
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg border border-accent/30 bg-surface-1/50 text-accent font-medium hover:bg-surface-2/50 transition-all duration-base ease-premium"
+                >
+                  Select {part1.name.split(' ')[0]}
+                </button>
+                <button
+                  onClick={() => {
+                    setPart(category, part2);
+                    setComparingParts(null);
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                >
+                  Select {part2.name.split(' ')[0]}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Build Variants Panel */}
+      {buildVariants.length > 0 && (
+        <div className="card p-4 mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm text-text-primary">Build Variants</h3>
+            <button
+              onClick={duplicateBuild}
+              className="px-3 py-1.5 rounded-md bg-surface-1/50 border border-border/20 text-xs text-text-primary hover:bg-surface-2/50 transition-all duration-base ease-premium"
+            >
+              + Duplicate Current
+            </button>
+          </div>
+          <div className="space-y-2">
+            {buildVariants.map((variant) => (
+              <button
+                key={variant.id}
+                onClick={() => switchVariant(variant.id)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-base ease-premium ${
+                  activeVariantId === variant.id
+                    ? 'bg-surface-1/60 border border-accent/30 text-accent'
+                    : 'bg-surface-1/30 border border-border/20 text-text-primary hover:bg-surface-1/50'
+                }`}
+              >
+                {variant.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }

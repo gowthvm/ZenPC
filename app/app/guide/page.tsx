@@ -88,10 +88,10 @@ export default function GuidePage() {
           <button
             key={step.id}
             onClick={() => setActiveStep(step.id)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-base ease-premium ${
               activeStep === step.id
-                ? 'bg-accent text-white'
-                : 'bg-surface-2/60 text-text-primary hover:bg-surface-2/80'
+                ? 'bg-accent text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                : 'bg-surface-1/60 backdrop-blur-glass border border-border/20 text-text-primary hover:bg-surface-1/80 hover:border-accent/20 hover:scale-105 active:scale-95'
             }`}
           >
             Step {step.id}
@@ -100,7 +100,7 @@ export default function GuidePage() {
       </div>
 
       {/* Step Content */}
-      <div className="card p-8">
+      <div className="card p-8 group hover:scale-[1.01] transition-all duration-base ease-premium">
         {buildSteps.map((step) => (
           activeStep === step.id && (
             <div key={step.id} className="space-y-6">
@@ -137,14 +137,14 @@ export default function GuidePage() {
                 <button
                   onClick={() => setActiveStep(Math.max(1, step.id - 1))}
                   disabled={step.id === 1}
-                  className="px-6 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-colors duration-200 hover:bg-surface-2/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 rounded-lg border border-border/20 bg-surface-1/60 backdrop-blur-glass text-text-primary font-medium hover:border-accent/20 transition-all duration-base ease-premium hover:bg-surface-1/80 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous Step
                 </button>
                 <button
                   onClick={() => setActiveStep(Math.min(buildSteps.length, step.id + 1))}
                   disabled={step.id === buildSteps.length}
-                  className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {step.id === buildSteps.length ? 'Complete' : 'Next Step'}
                 </button>
@@ -156,21 +156,21 @@ export default function GuidePage() {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card p-6">
+        <div className="card p-6 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-base ease-premium">
           <h3 className="font-semibold text-lg mb-4 text-text-primary">Need Help?</h3>
           <p className="text-text-muted mb-4">Check out our compatibility tool to ensure your components work together.</p>
           <Link 
             href="/app/builder" 
-            className="px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors inline-block"
+            className="px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl inline-block"
           >
             Use Builder Tool
           </Link>
         </div>
         
-        <div className="card p-6">
+        <div className="card p-6 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-base ease-premium">
           <h3 className="font-semibold text-lg mb-4 text-text-primary">Video Tutorials</h3>
           <p className="text-text-muted mb-4">Watch step-by-step video guides for visual learners.</p>
-          <span className="inline-flex px-4 py-2 rounded-lg border border-border text-text-muted text-sm font-medium cursor-default">
+          <span className="inline-flex px-4 py-2 rounded-lg border border-border/20 bg-surface-1/60 backdrop-blur-glass text-text-muted text-sm font-medium cursor-default">
             Coming soon
           </span>
         </div>

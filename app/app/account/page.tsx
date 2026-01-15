@@ -90,7 +90,7 @@ export default function AccountPage() {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
         <div className="w-full md:w-64 flex-shrink-0">
-          <div className="card p-6 mb-6">
+          <div className="card p-6 mb-6 group hover:scale-[1.02] transition-all duration-base ease-premium">
             <div className="flex flex-col items-center text-center mb-6">
               <div className="w-20 h-20 rounded-full bg-surface-3/50 flex items-center justify-center mb-4 overflow-hidden">
                 {profile.avatar_url ? (
@@ -114,30 +114,30 @@ export default function AccountPage() {
             <div className="space-y-1">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full text-left px-4 py-2 rounded-lg transition-all duration-base ease-premium ${
                   activeTab === 'profile' 
-                    ? 'bg-surface-3/50 text-accent' 
-                    : 'text-text-muted hover:bg-surface-2/50'
+                    ? 'bg-surface-1/60 text-accent shadow-glass border border-accent/20' 
+                    : 'text-text-muted hover:bg-surface-1/40 hover:text-text-primary border border-transparent hover:border-border/20'
                 }`}
               >
                 Profile Settings
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full text-left px-4 py-2 rounded-lg transition-all duration-base ease-premium ${
                   activeTab === 'security' 
-                    ? 'bg-surface-3/50 text-accent' 
-                    : 'text-text-muted hover:bg-surface-2/50'
+                    ? 'bg-surface-1/60 text-accent shadow-glass border border-accent/20' 
+                    : 'text-text-muted hover:bg-surface-1/40 hover:text-text-primary border border-transparent hover:border-border/20'
                 }`}
               >
                 Security
               </button>
               <button
                 onClick={() => setActiveTab('saved')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full text-left px-4 py-2 rounded-lg transition-all duration-base ease-premium ${
                   activeTab === 'saved' 
-                    ? 'bg-surface-3/50 text-accent' 
-                    : 'text-text-muted hover:bg-surface-2/50'
+                    ? 'bg-surface-1/60 text-accent shadow-glass border border-accent/20' 
+                    : 'text-text-muted hover:bg-surface-1/40 hover:text-text-primary border border-transparent hover:border-border/20'
                 }`}
               >
                 Saved Builds
@@ -157,7 +157,7 @@ export default function AccountPage() {
         {/* Main Content */}
         <div className="flex-1">
           {activeTab === 'profile' && (
-            <div className="card p-6">
+            <div className="card p-6 group hover:scale-[1.01] transition-all duration-base ease-premium">
               <h2 className="text-xl font-bold mb-6">Profile Settings</h2>
               
               <form className="space-y-6">
@@ -169,7 +169,7 @@ export default function AccountPage() {
                     id="fullName"
                     type="text"
                     defaultValue={profile.full_name || ''}
-                    className="w-full px-4 py-2 bg-surface-1/50 border border-border/20 rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-all"
+                    className="w-full px-4 py-2 bg-surface-1/60 backdrop-blur-glass border border-border/20 rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-all duration-base ease-premium"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -183,7 +183,7 @@ export default function AccountPage() {
                     type="email"
                     disabled
                     value={profile.email}
-                    className="w-full px-4 py-2 bg-surface-2/30 text-text-muted rounded-lg border border-border/20 cursor-not-allowed"
+                    className="w-full px-4 py-2 bg-surface-2/40 backdrop-blur-glass text-text-muted rounded-lg border border-border/20 cursor-not-allowed"
                   />
                   <p className="mt-1 text-xs text-text-muted">
                     Contact support to change your email address
@@ -191,7 +191,7 @@ export default function AccountPage() {
                 </div>
 
                 <div className="pt-2">
-                  <Button type="submit" variant="default">
+                  <Button type="submit" variant="default" className="transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
                     Update Profile
                   </Button>
                 </div>
@@ -200,7 +200,7 @@ export default function AccountPage() {
           )}
 
           {activeTab === 'security' && (
-            <div className="card p-6">
+            <div className="card p-6 group hover:scale-[1.01] transition-all duration-base ease-premium">
               <h2 className="text-xl font-bold mb-6">Security</h2>
               <div className="space-y-4">
                 <p className="text-sm text-text-muted">
@@ -211,11 +211,11 @@ export default function AccountPage() {
           )}
 
           {activeTab === 'saved' && (
-            <div className="card p-6">
+            <div className="card p-6 group hover:scale-[1.01] transition-all duration-base ease-premium">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">Saved Builds</h2>
                 <Link href="/app/builder">
-                  <Button variant="outline">
+                  <Button variant="outline" className="transition-all duration-base ease-premium hover:scale-105 active:scale-95">
                     New Build
                   </Button>
                 </Link>
@@ -223,15 +223,17 @@ export default function AccountPage() {
               
               <div className="text-center py-12">
                 <div className="text-text-muted mb-4">
-                  <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
+                  <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center shadow-glass">
+                    <svg className="w-8 h-8 text-accent opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
                 </div>
                 <p className="text-text-muted mb-4">
                   You don&apos;t have any saved builds yet.
                 </p>
                 <Link href="/app/builder">
-                  <Button variant="default">
+                  <Button variant="default" className="transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
                     Create Your First Build
                   </Button>
                 </Link>

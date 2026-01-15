@@ -91,11 +91,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="w-full py-10 space-y-12 animate-fade-in">
+    <div className="w-full py-10 space-y-12">
       {/* Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Continue Your Build */}
-        <section className="lg:col-span-5 card p-8 flex flex-col justify-between">
+        <section className="lg:col-span-5 card p-8 flex flex-col justify-between group hover:scale-[1.02] transition-all duration-base ease-premium">
           <h2 className="font-display text-2xl font-bold mb-4 text-text-primary">Continue Your Build</h2>
           {mostRecentBuild ? (
             <>
@@ -115,7 +115,7 @@ export default function Dashboard() {
               </div>
               <Link
                 href="/app/builder"
-                className="mt-8 w-full py-3 rounded-xl bg-accent text-white font-semibold text-lg hover:bg-accent/90 focus:ring-2 focus:ring-accent/50 transition-colors duration-200"
+                className="mt-8 w-full py-3 rounded-xl bg-accent text-white font-semibold text-lg hover:bg-accent/90 focus:ring-2 focus:ring-accent/50 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
               >
                 Continue Building
               </Link>
@@ -125,7 +125,7 @@ export default function Dashboard() {
               <div className="text-text-muted mb-2">No builds yet.</div>
               <Link
                 href="/app/builder"
-                className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors duration-200"
+                className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
               >
                 Start Building
               </Link>
@@ -135,16 +135,16 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <section className="lg:col-span-3 flex flex-col gap-6">
-          <div className="card p-8">
+          <div className="card p-8 group hover:scale-[1.02] transition-all duration-base ease-premium">
             <h2 className="font-display text-2xl font-bold mb-4 text-text-primary">Quick Actions</h2>
             <div className="flex flex-col gap-4">
               {quickActions.map((action) => (
                 <Link
                   key={action.label}
                   href={action.href}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-3/60 hover:bg-accent/10 transition-colors duration-200 font-medium text-text-primary hover:text-accent group cursor-pointer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-1/60 backdrop-blur-glass border border-border/10 hover:bg-surface-1/80 hover:border-accent/20 transition-all duration-base ease-premium font-medium text-text-primary hover:text-accent group cursor-pointer"
                 >
-                  <span className="text-text-muted group-hover:text-accent transition-colors duration-200">
+                  <span className="text-text-muted group-hover:text-accent transition-colors duration-base">
                     {action.icon}
                   </span>
                   {action.label}
@@ -155,7 +155,7 @@ export default function Dashboard() {
 
           {/* Helpful Guidance */}
           {guidance && (
-            <div className="bg-gradient-to-br from-accent/10 to-purple-600/10 rounded-2xl shadow border border-border/20 p-6 animate-fade-in">
+            <div className="card p-6 bg-gradient-to-br from-accent/10 to-purple-600/10 border-accent/20">
               <div className="flex items-center gap-3 mb-2">
                 <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
                 <span className="font-semibold text-text-primary">Tip</span>
@@ -166,7 +166,7 @@ export default function Dashboard() {
         </section>
 
         {/* Build Summary Snapshot */}
-        <section className="lg:col-span-4 card p-8 flex flex-col justify-between">
+        <section className="lg:col-span-4 card p-8 flex flex-col justify-between group hover:scale-[1.02] transition-all duration-base ease-premium">
           <h2 className="font-display text-2xl font-bold mb-4 text-text-primary">Build Summary Snapshot</h2>
           {mostRecentBuild ? (
             <div className="space-y-6">
@@ -194,7 +194,7 @@ export default function Dashboard() {
               <div>No build summary available yet.</div>
               <Link
                 href="/app/builder"
-                className="mt-4 px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors duration-200"
+                className="mt-4 px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
               >
                 Start Building
               </Link>
@@ -211,7 +211,7 @@ export default function Dashboard() {
             {savedBuilds.map((build) => (
               <div
                 key={build.id}
-                className="card p-6 group"
+                className="card p-6 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-base ease-premium cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="font-semibold text-lg text-text-primary group-hover:text-accent transition-colors duration-200">
@@ -243,8 +243,8 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <div className="card p-12 text-center animate-fade-in">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center">
+          <div className="card p-12 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center shadow-glass">
               <svg className="w-10 h-10 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
@@ -253,7 +253,7 @@ export default function Dashboard() {
             <p className="text-text-muted mb-6">Start building your first PC to see it here</p>
             <Link
               href="/app/builder"
-              className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors duration-200"
+              className="px-6 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
             >
               Start Building
             </Link>
