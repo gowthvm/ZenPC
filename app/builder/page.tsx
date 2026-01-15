@@ -1111,7 +1111,7 @@ export default function BuilderPage() {
                   </div>
                   {budgetStatus.status === 'near' && (
                     <div className="mt-1 text-xs text-yellow-200">
-                      You're approaching your budget limit. Consider reviewing your selections.
+                      You&apos;re approaching your budget limit. Consider reviewing your selections.
                     </div>
                   )}
                   {budgetStatus.status === 'over' && (
