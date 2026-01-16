@@ -29,6 +29,7 @@ export interface CompatibilityRule {
   severity: CompatibilitySeverity;
   message: string;
   description?: string;
+  active?: boolean;
 }
 
 export interface CompatibilityIssue {

@@ -85,7 +85,7 @@ export default function PartSpecs({
   collapsedGroups = []
 }: PartSpecsProps) {
   const groupedSpecs = useMemo(() => {
-    if (!part) return {};
+    if (!part) return {} as Record<SpecGroup, Array<{ key: string; value: any; definition: any }>>;
     
     const groups: Record<SpecGroup, Array<{ key: string; value: any; definition: any }>> = {
       performance: [],
@@ -123,7 +123,7 @@ export default function PartSpecs({
       });
     });
     
-    return groups;
+    return groups as Record<SpecGroup, Array<{ key: string; value: any; definition: any }>>;
   }, [part, category, showLowImportance]);
   
   if (!part) {
@@ -134,7 +134,7 @@ export default function PartSpecs({
     );
   }
   
-  const hasAnySpecs = Object.values(groupedSpecs).some(group => group.length > 0);
+  const hasAnySpecs = Object.values(groupedSpecs).some((group: unknown) => (group as Array<{ key: string; value: any; definition: any }>).length > 0);
   
   if (!hasAnySpecs) {
     return (
@@ -147,12 +147,12 @@ export default function PartSpecs({
   return (
     <div className={`space-y-4 ${className}`}>
       {SPEC_GROUP_ORDER.map((group) => {
-        const specs = groupedSpecs[group];
+        const specs = groupedSpecs[group as SpecGroup];
         if (specs.length === 0) return null;
         
         const isCollapsed = collapsedGroups.includes(group);
-        const highImportanceSpecs = specs.filter(s => s.definition.importance === 'high');
-        const otherSpecs = specs.filter(s => s.definition.importance !== 'high');
+        const highImportanceSpecs = specs.filter((s: { key: string; value: any; definition: any }) => s.definition.importance === 'high');
+        const otherSpecs = specs.filter((s: { key: string; value: any; definition: any }) => s.definition.importance !== 'high');
         
         return (
           <div
@@ -165,7 +165,7 @@ export default function PartSpecs({
             
             <div className="space-y-2">
               {/* High importance specs - always visible */}
-              {highImportanceSpecs.map(({ key, value, definition }) => (
+              {highImportanceSpecs.map(({ key, value, definition }: { key: string; value: any; definition: any }) => (
                 <div
                   key={key}
                   className="flex items-start justify-between py-1.5 border-b border-border/10 last:border-0"
@@ -189,7 +189,7 @@ export default function PartSpecs({
               {/* Other specs - collapsible if group is collapsed */}
               {!isCollapsed && otherSpecs.length > 0 && (
                 <div className="space-y-2 mt-2 pt-2 border-t border-border/10">
-                  {otherSpecs.map(({ key, value, definition }) => (
+                  {otherSpecs.map(({ key, value, definition }: { key: string; value: any; definition: any }) => (
                     <div
                       key={key}
                       className="flex items-start justify-between py-1"

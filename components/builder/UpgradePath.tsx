@@ -160,6 +160,17 @@ export const UpgradePath: React.FC<UpgradePathProps> = ({ className = '', useCas
     }
   }, [selected]);
 
+  // Estimate current power usage
+  const estimateCurrentPowerUsage = useCallback(() => {
+    const cpu = selected.cpu;
+    const gpu = selected.gpu;
+    
+    const cpuTdp = getSpecValue(cpu, 'tdp_watts') || getSpecValue(cpu, 'tdp_w') || 100;
+    const gpuTdp = getSpecValue(gpu, 'tdp_watts') || getSpecValue(gpu, 'tdp_w') || 250;
+    
+    return cpuTdp + gpuTdp + 150; // Base system overhead
+  }, [selected]);
+
   // Calculate future-proofing metrics
   const calculateFutureProofing = useCallback((category: string, part: any) => {
     const metrics = {
@@ -201,18 +212,7 @@ export const UpgradePath: React.FC<UpgradePathProps> = ({ className = '', useCas
     }
 
     return metrics;
-  }, [selected]);
-
-  // Estimate current power usage
-  const estimateCurrentPowerUsage = useCallback(() => {
-    const cpu = selected.cpu;
-    const gpu = selected.gpu;
-    
-    const cpuTdp = getSpecValue(cpu, 'tdp_watts') || getSpecValue(cpu, 'tdp_w') || 100;
-    const gpuTdp = getSpecValue(gpu, 'tdp_watts') || getSpecValue(gpu, 'tdp_w') || 250;
-    
-    return cpuTdp + gpuTdp + 150; // Base system overhead
-  }, [selected]);
+  }, [estimateCurrentPowerUsage]);
 
   // Generate bottleneck upgrades
   const bottleneckUpgrades = useMemo(() => {

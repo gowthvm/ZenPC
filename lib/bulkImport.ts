@@ -5,8 +5,8 @@
  */
 
 import { supabase } from './supabaseClient';
-import { validatePart, getValidSpecKeysForCategory, type PartCategory } from './specValidator';
-import { SPEC_DICTIONARY, getSpecDefinition } from './specDictionary';
+import { validatePart, getValidSpecKeysForCategory } from './specValidator';
+import { SPEC_DICTIONARY, getSpecDefinition, type PartCategory } from './specDictionary';
 
 export interface ImportResult {
   success: boolean;

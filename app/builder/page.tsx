@@ -4,6 +4,18 @@ import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from '
 import Link from 'next/link';
 import { useBuilderStore } from '@/store/builder';
 
+// Logical build order for step-based progression
+const BUILD_ORDER = [
+  { key: 'cpu', label: 'CPU', icon: '🔧' },
+  { key: 'motherboard', label: 'Motherboard', icon: '🔌' },
+  { key: 'ram', label: 'RAM', icon: '💾' },
+  { key: 'gpu', label: 'GPU', icon: '🎮' },
+  { key: 'storage', label: 'Storage', icon: '💿' },
+  { key: 'psu', label: 'Power Supply', icon: '⚡' },
+  { key: 'case', label: 'Case', icon: '📦' },
+];
+
+// Legacy categories for compatibility
 const PART_CATEGORIES = [
   { key: 'cpu', label: 'CPU' },
   { key: 'gpu', label: 'GPU' },
@@ -194,9 +206,19 @@ export default function BuilderPage() {
   // Guided Mode state
   const [guidedMode, setGuidedMode] = useState(false);
   // Recommended build order
-  const buildOrder = ['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case'];
+  const buildOrder = BUILD_ORDER.map(step => step.key);
   // Find the next recommended component (first missing in order)
   const nextComponent = buildOrder.find(cat => !selected[cat]);
+  
+  // Calculate current step index and progress
+  const completedSteps = buildOrder.filter(cat => selected[cat]).length;
+  const totalSteps = buildOrder.length;
+  const progressPercentage = (completedSteps / totalSteps) * 100;
+  
+  // Find the current step index (the highest completed step)
+  const currentStepIndex = buildOrder.reduce((highest, cat, index) => {
+    return selected[cat] ? Math.max(highest, index) : highest;
+  }, -1);
 
   // Build management state
   const [user, setUser] = useState<any>(null);
@@ -433,7 +455,7 @@ export default function BuilderPage() {
     const loadPartsAndPresets = async () => {
       try {
         const results = await Promise.all(
-          PART_CATEGORIES.map(async ({ key }) => {
+          BUILD_ORDER.map(async ({ key }) => {
             const { data, error } = await fetchParts(key);
             if (error) {
               console.error(`Error loading parts for ${key}:`, error);
@@ -709,7 +731,7 @@ export default function BuilderPage() {
 
   // Build completion check
   const getBuildCompletion = () => {
-    const required = ['cpu', 'motherboard', 'ram', 'gpu', 'storage', 'psu', 'case'];
+    const required = BUILD_ORDER.map(step => step.key);
     const completed = required.filter(cat => selected[cat]);
     return {
       completed: completed.length,
@@ -962,7 +984,7 @@ export default function BuilderPage() {
     if (budgetMax) lines.push(`Budget: $${budgetMin || 0} - $${budgetMax}`);
     lines.push('');
     lines.push('Parts:');
-    for (const { key, label } of PART_CATEGORIES) {
+    for (const { key, label } of BUILD_ORDER) {
       const part = selected[key];
       const price = getSelectedPrice(part);
       lines.push(`- ${label}: ${part?.name || '—'}${price ? ` ($${price.toFixed(2)})` : ''}`);
@@ -1099,7 +1121,7 @@ export default function BuilderPage() {
             defaultValue=""
           >
             <option value="">Jump to…</option>
-            {PART_CATEGORIES.map(({ key, label }) => (
+            {BUILD_ORDER.map(({ key, label }) => (
               <option key={key} value={key}>{label}</option>
             ))}
           					</select>
@@ -1161,6 +1183,116 @@ export default function BuilderPage() {
         </div>
       </div>
 
+      {/* Step Progress Indicator */}
+      <div className="card p-6 border-accent/20 bg-accent/5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-lg text-text-primary">Build Progress</h2>
+          <div className="text-sm text-text-muted">
+            {completedSteps} of {totalSteps} components selected
+          </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="w-full h-3 bg-surface-2/50 rounded-full overflow-hidden mb-6">
+          <div 
+            className="h-full bg-gradient-to-r from-accent to-purple-600 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+
+        {/* Step Indicators */}
+        <div className="grid grid-cols-7 gap-2 mb-4">
+          {BUILD_ORDER.map((step, index) => {
+            const isSelected = selected[step.key];
+            const isCurrent = index === currentStepIndex && isSelected;
+            const isNext = step.key === nextComponent;
+            const isPast = index < currentStepIndex || isSelected;
+            
+            return (
+              <div key={step.key} className="text-center">
+                <button
+                  onClick={() => {
+                    const el = document.getElementById(`cat-${step.key}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  className={`
+                    w-12 h-12 mx-auto rounded-full border-2 flex items-center justify-center text-lg transition-all duration-300 mb-2
+                    ${isSelected 
+                      ? 'border-accent bg-accent/20 text-accent shadow-lg shadow-accent/20' 
+                      : isNext
+                      ? 'border-accent/50 bg-surface-1/50 text-accent/70 animate-pulse'
+                      : 'border-border/30 bg-surface-1/30 text-text-muted/50'
+                    }
+                    hover:border-accent/60 hover:bg-surface-1/50 hover:text-text-primary
+                  `}
+                  title={step.label}
+                >
+                  {isSelected ? '✓' : step.icon}
+                </button>
+                <div className={`
+                  text-xs font-medium transition-all duration-300
+                  ${isSelected ? 'text-accent' : isNext ? 'text-text-primary' : 'text-text-muted/50'}
+                `}>
+                  {step.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Next Step Guidance */}
+        {nextComponent && (
+          <div className="p-4 rounded-lg bg-surface-1/30 border border-accent/30 backdrop-blur-glass">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/50 flex items-center justify-center text-sm">
+                {BUILD_ORDER.find(s => s.key === nextComponent)?.icon}
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-sm text-text-primary">
+                  Next: Select {BUILD_ORDER.find(s => s.key === nextComponent)?.label}
+                </div>
+                <div className="text-xs text-text-muted mt-1">
+                  {nextComponent === 'cpu' && 'The CPU is the brain of your PC - start with your performance requirements.'}
+                  {nextComponent === 'motherboard' && 'Choose a motherboard compatible with your CPU socket.'}
+                  {nextComponent === 'ram' && 'Select RAM that matches your motherboard and performance needs.'}
+                  {nextComponent === 'gpu' && 'Choose a graphics card based on your gaming/workload requirements.'}
+                  {nextComponent === 'storage' && 'Select storage for your OS, applications, and files.'}
+                  {nextComponent === 'psu' && 'Ensure your power supply can handle all components.'}
+                  {nextComponent === 'case' && 'Choose a case that fits all your components and your style.'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const el = document.getElementById(`cat-${nextComponent}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-all hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Select {BUILD_ORDER.find(s => s.key === nextComponent)?.label}
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {!nextComponent && (
+          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 backdrop-blur-glass">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/50 flex items-center justify-center text-sm">
+                ✓
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-sm text-green-400">
+                  Build Complete!
+                </div>
+                <div className="text-xs text-text-muted mt-1">
+                  All components selected. Review compatibility and finalize your build.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Quick Add Templates Section */}
       {showQuickAddTemplates && (
         <div className="animate-in slide-in-from-top-2 duration-300">
@@ -1207,7 +1339,7 @@ export default function BuilderPage() {
             </div>
           )}
 
-          {PART_CATEGORIES.map(({ key, label }) => {
+          {BUILD_ORDER.map(({ key, label, icon }) => {
             // Highlight if guided mode is on and this is the next recommended component
             const isNext = guidedMode && nextComponent === key;
             const selectedPart = selected[key];
@@ -1215,41 +1347,83 @@ export default function BuilderPage() {
             const currentSearchQuery = searchQueries[key] || '';
             const isExpanded = expandedCategories[key] || false;
             const parts = filteredPartsByCategory[key] || [];
+            
+            // Calculate step status for visual hierarchy
+            const stepIndex = BUILD_ORDER.findIndex(s => s.key === key);
+            const isCompleted = selectedPart;
+            const isNextStep = stepIndex === currentStepIndex + 1 && !isCompleted;
+            const isPastStep = stepIndex <= currentStepIndex;
+            
+            // Fix: Determine if this step should be accessible
+            const isAccessible = isPastStep || isNextStep; // Allow past steps and the immediate next step
+            
+            // Determine visual intensity based on step status
+            const getCardStyles = () => {
+              if (isNext) {
+                return 'ring-2 ring-accent/50 ring-offset-2 ring-offset-bg border-accent/35 bg-accent/8 shadow-lg shadow-accent/10';
+              }
+              if (isCompleted) {
+                return 'border-accent/25 bg-surface-1/45 hover:border-accent/30';
+              }
+              if (!isAccessible) {
+                return 'border-border/10 bg-surface-1/20 hover:border-border/20 opacity-60 hover:opacity-80';
+              }
+              return 'border-border/15 bg-surface-1/30 hover:border-border/25';
+            };
 
             						return (
 									<div
 										key={key}
 										id={`cat-${key}`}
-										className={`card p-5 md:p-6 transition-all duration-300 ${
-                          isNext
-                            ? 'ring-2 ring-accent/50 ring-offset-2 ring-offset-bg border-accent/35 bg-accent/8'
-                            : selectedPart
-                            ? 'border-accent/25 bg-surface-1/45 hover:border-accent/30'
-                            : 'border-border/15 bg-surface-1/30 hover:border-border/25'
-                        }`}
+										className={`card p-5 md:p-6 transition-all duration-500 ${getCardStyles()}`}
 									>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all duration-300 ${
+                      isCompleted 
+                        ? 'bg-accent/20 border-2 border-accent/50 text-accent' 
+                        : !isAccessible
+                        ? 'bg-surface-2/50 border-2 border-border/30 text-text-muted/50'
+                        : 'bg-surface-1/50 border-2 border-border/20 text-text-muted'
+                    }`}>
+                      {isCompleted ? '✓' : icon}
+                    </div>
                     <div>
-                      <h2 className="font-semibold text-lg text-text-primary flex items-center gap-2">
+                      <h2 className={`font-semibold text-lg flex items-center gap-2 transition-all duration-300 ${
+                        isCompleted ? 'text-accent' : !isAccessible ? 'text-text-muted/70' : 'text-text-primary'
+                      }`}>
                         {label}
                         {selectedPart && (
-                          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        )}
+                        {isNext && (
+                          <span className="px-2 py-1 rounded-full bg-accent/20 text-xs text-accent font-medium animate-pulse">
+                            Next
+                          </span>
                         )}
                       </h2>
-                      <p className="text-sm text-text-muted mt-1">
+                      <p className={`text-sm mt-1 transition-all duration-300 ${
+                        isCompleted ? 'text-text-muted' : !isAccessible ? 'text-text-muted/50' : 'text-text-muted'
+                      }`}>
                         {selectedPart
                           ? getPartLabel(key, selectedPart)
+                          : !isAccessible
+                          ? 'Complete previous steps first'
                           : 'No part selected yet'}
                       </p>
                     </div>
                     <button
                       onClick={() => toggleCategoryExpansion(key)}
-                      className="p-2 rounded-md bg-surface-1/50 border border-border/20 hover:bg-surface-2/50 hover:border-border/30 transition-all duration-200"
+                      className={`p-2 rounded-md border transition-all duration-200 ${
+                        !isAccessible
+                          ? 'bg-surface-2/30 border-border/10 text-text-muted/40 cursor-not-allowed'
+                          : 'bg-surface-1/50 border-border/20 hover:bg-surface-2/50 hover:border-border/30'
+                      }`}
                       aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${label} options`}
+                      disabled={!isAccessible}
                     >
                       <svg 
-                        className={`w-4 h-4 text-text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -1259,10 +1433,12 @@ export default function BuilderPage() {
                     </button>
                   </div>
                   <div className="flex items-center gap-2 text-right text-sm">
-                    <div className="font-bold text-accent text-lg">
+                    <div className={`font-bold text-lg transition-all duration-300 ${
+                      isCompleted ? 'text-accent' : !isAccessible ? 'text-text-muted/40' : 'text-text-muted'
+                    }`}>
                       {selectedPart?.price
                         ? `$${selectedPart.price.toFixed(2)}`
-                        : '--'}
+                        : !isAccessible ? '---' : '--'}
                     </div>
                       {selectedPart && (
                         <div className="flex items-center gap-2">
@@ -1320,7 +1496,7 @@ export default function BuilderPage() {
                   )}
 
                   {/* Collapsible part selection area */}
-                  {isExpanded && (
+                  {isExpanded && isAccessible && (
                     <div className="flex flex-col gap-4 animate-in slide-in-from-top-2 duration-200">
                       {/* Smart Filters */}
                       <SmartFilters
@@ -1433,7 +1609,7 @@ export default function BuilderPage() {
         </div>
 
         <div className="space-y-4">
-          {/* Build Summary - Tier 1 (Highest Priority) */}
+          {/* Build Summary - Tier 1 (Always Visible) */}
           <div className="card p-5 space-y-4 border-border/20 bg-surface-1/25">
             <div className="flex items-center gap-2">
               <h2 className="font-semibold text-text-primary">Build Summary</h2>
@@ -1490,7 +1666,7 @@ export default function BuilderPage() {
                         {Object.entries(categoryTotals)
                           .sort(([, a], [, b]) => b - a)
                           .map(([cat, total]) => {
-                            const category = PART_CATEGORIES.find(c => c.key === cat);
+                            const category = BUILD_ORDER.find(c => c.key === cat);
                             const percentage = (total / currentBudget) * 100;
                             return (
                               <div key={cat} className="flex items-center justify-between text-xs">
@@ -1614,7 +1790,7 @@ export default function BuilderPage() {
                   <div className="text-xs font-medium text-text-primary mb-2">Missing Components:</div>
                   <div className="flex flex-wrap gap-2">
                     {completion.missing.map(cat => {
-                      const category = PART_CATEGORIES.find(c => c.key === cat);
+                      const category = BUILD_ORDER.find(c => c.key === cat);
                       return (
                         <span key={cat} className="px-2 py-1 rounded-md bg-surface-2/50 border border-border/20 text-xs text-text-muted">
                           {category?.label || cat}
@@ -1769,134 +1945,172 @@ export default function BuilderPage() {
           </div>
 
 
-          {/* Performance Insights - Tier 2 (Secondary, Collapsible) */}
-          <div className="card p-4 space-y-3 border-border/10 bg-surface-1/15">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-sm text-text-muted">Performance Insights</h3>
-              <button
-                type="button"
-                onClick={() => setShowAdvancedInsights((v) => !v)}
-                className="px-3 py-1.5 rounded-md bg-surface-1/30 border border-border/15 text-xs text-text-muted hover:bg-surface-1/40 hover:text-text-primary transition-base"
-                aria-expanded={showAdvancedInsights}
-              >
-                {showAdvancedInsights ? 'Collapse' : 'Expand'}
-              </button>
-            </div>
-            
-            {showAdvancedInsights && (
-              <>
-                {bottleneckAnalysis && bottleneckAnalysis.insights.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-xs text-text-muted">{bottleneckAnalysis.summary}</p>
-                    
-                    <div className="space-y-2">
-                      {bottleneckAnalysis.insights.map((insight, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-3 rounded-lg border ${
-                            insight.type === 'bottleneck'
-                              ? 'border-orange-500/30 bg-orange-500/10'
-                              : insight.type === 'recommendation'
-                              ? 'border-blue-500/30 bg-blue-500/10'
-                              : 'border-green-500/30 bg-green-500/10'
-                          }`}
-                        >
-                          {insight.component && (
-                            <div className="text-xs font-medium text-text-primary mb-1">
-                              {insight.component.toUpperCase()}
+          {/* Performance Insights - Tier 2 (Visible when 3+ components selected) */}
+          {completedSteps >= 3 && (
+            <div className={`card p-4 space-y-3 transition-all duration-500 ${
+              completedSteps >= 3 
+                ? 'border-border/10 bg-surface-1/15 opacity-100' 
+                : 'border-border/5 bg-surface-1/10 opacity-50'
+            }`}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-sm text-text-muted">Performance Insights</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedInsights((v) => !v)}
+                  className="px-3 py-1.5 rounded-md bg-surface-1/30 border border-border/15 text-xs text-text-muted hover:bg-surface-1/40 hover:text-text-primary transition-base"
+                  aria-expanded={showAdvancedInsights}
+                >
+                  {showAdvancedInsights ? 'Collapse' : 'Expand'}
+                </button>
+              </div>
+              
+              {showAdvancedInsights && (
+                <>
+                  {bottleneckAnalysis && bottleneckAnalysis.insights.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-text-muted">{bottleneckAnalysis.summary}</p>
+                      
+                      <div className="space-y-2">
+                        {bottleneckAnalysis.insights.map((insight, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-3 rounded-lg border ${
+                              insight.type === 'bottleneck'
+                                ? 'border-orange-500/30 bg-orange-500/10'
+                                : insight.type === 'recommendation'
+                                ? 'border-blue-500/30 bg-blue-500/10'
+                                : 'border-green-500/30 bg-green-500/10'
+                            }`}
+                          >
+                            {insight.component && (
+                              <div className="text-xs font-medium text-text-primary mb-1">
+                                {insight.component.toUpperCase()}
+                              </div>
+                            )}
+                            <div className={`text-xs font-medium mb-1 ${
+                              insight.severity === 'suggestion' ? 'text-orange-300' : 'text-blue-300'
+                            }`}>
+                              {insight.message}
                             </div>
-                          )}
-                          <div className={`text-xs font-medium mb-1 ${
-                            insight.severity === 'suggestion' ? 'text-orange-300' : 'text-blue-300'
-                          }`}>
-                            {insight.message}
+                            <div className="text-xs text-text-muted">{insight.explanation}</div>
                           </div>
-                          <div className="text-xs text-text-muted">{insight.explanation}</div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  
+                  {(!bottleneckAnalysis || bottleneckAnalysis.insights.length === 0) && (
+                    <p className="text-xs text-text-muted">No performance insights available. Add more components to see analysis.</p>
+                  )}
+                </>
+              )}
+              
+              {!showAdvancedInsights && (
+                <p className="text-xs text-text-muted">Click expand to view performance insights and bottlenecks.</p>
+              )}
+            </div>
+          )}
+
+          {/* Advanced Analysis Section - Tier 3 (Visible when 5+ components selected) */}
+          {completedSteps >= 5 && (
+            <div className={`space-y-3 transition-all duration-500 ${
+              completedSteps >= 5 
+                ? 'opacity-100' 
+                : 'opacity-50'
+            }`}>
+              <div className="text-xs font-medium text-text-muted/70 text-center py-2">
+                Advanced Analysis
+              </div>
+              
+              {/* Compatibility Map - Tier 3 */}
+              <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-xs text-text-muted">Compatibility Map</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowCompatibilityMap((v) => !v)}
+                    className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
+                    aria-expanded={showCompatibilityMap}
+                  >
+                    {showCompatibilityMap ? 'Collapse' : 'Expand'}
+                  </button>
+                </div>
+                
+                {showCompatibilityMap && (
+                  <CompatibilityMap />
                 )}
                 
-                {(!bottleneckAnalysis || bottleneckAnalysis.insights.length === 0) && (
-                  <p className="text-xs text-text-muted">No performance insights available. Add more components to see analysis.</p>
+                {!showCompatibilityMap && (
+                  <p className="text-xs text-text-muted/70">View compatibility relationships</p>
                 )}
-              </>
-            )}
-            
-            {!showAdvancedInsights && (
-              <p className="text-xs text-text-muted">Click expand to view performance insights and bottlenecks.</p>
-            )}
-          </div>
+              </div>
+              
+              {/* Upgrade Path Planning - Tier 3 */}
+              <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-xs text-text-muted">Upgrade Path</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowUpgradePath((v) => !v)}
+                    className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
+                    aria-expanded={showUpgradePath}
+                  >
+                    {showUpgradePath ? 'Collapse' : 'Expand'}
+                  </button>
+                </div>
+                
+                {showUpgradePath && (
+                  <UpgradePath useCaseMode={useCaseMode} />
+                )}
+                
+                {!showUpgradePath && (
+                  <p className="text-xs text-text-muted/70">View upgrade recommendations</p>
+                )}
+              </div>
+              
+              {/* Power Consumption Analysis - Tier 3 */}
+              <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-xs text-text-muted">Power Analysis</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowPowerConsumption((v) => !v)}
+                    className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
+                    aria-expanded={showPowerConsumption}
+                  >
+                    {showPowerConsumption ? 'Collapse' : 'Expand'}
+                  </button>
+                </div>
+                
+                {showPowerConsumption && (
+                  <PowerConsumptionVisual />
+                )}
+                
+                {!showPowerConsumption && (
+                  <p className="text-xs text-text-muted/70">View power consumption estimates</p>
+                )}
+              </div>
+            </div>
+          )}
 
-          {/* Compatibility Map - Tier 3 (Advanced, Collapsible) */}
-          <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-xs text-text-muted">Compatibility Map</h3>
-              <button
-                type="button"
-                onClick={() => setShowCompatibilityMap((v) => !v)}
-                className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
-                aria-expanded={showCompatibilityMap}
-              >
-                {showCompatibilityMap ? 'Collapse' : 'Expand'}
-              </button>
+          {/* Progressive Disclosure Hints */}
+          {completedSteps < 3 && (
+            <div className="card p-4 border-border/5 bg-surface-1/10">
+              <div className="text-xs text-text-muted/70 text-center">
+                <div className="font-medium text-text-muted mb-2">🔒 Advanced Features</div>
+                <p>Select {3 - completedSteps} more component{3 - completedSteps > 1 ? 's' : ''} to unlock performance insights.</p>
+              </div>
             </div>
-            
-            {showCompatibilityMap && (
-              <CompatibilityMap />
-            )}
-            
-            {!showCompatibilityMap && (
-              <p className="text-xs text-text-muted/70">View compatibility relationships</p>
-            )}
-          </div>
+          )}
           
-          {/* Upgrade Path Planning - Tier 3 (Advanced, Collapsible) */}
-          <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-xs text-text-muted">Upgrade Path</h3>
-              <button
-                type="button"
-                onClick={() => setShowUpgradePath((v) => !v)}
-                className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
-                aria-expanded={showUpgradePath}
-              >
-                {showUpgradePath ? 'Collapse' : 'Expand'}
-              </button>
+          {completedSteps >= 3 && completedSteps < 5 && (
+            <div className="card p-4 border-border/5 bg-surface-1/10">
+              <div className="text-xs text-text-muted/70 text-center">
+                <div className="font-medium text-text-muted mb-2">🎯 Expert Analysis</div>
+                <p>Select {5 - completedSteps} more component{5 - completedSteps > 1 ? 's' : ''} to unlock advanced analysis tools.</p>
+              </div>
             </div>
-            
-            {showUpgradePath && (
-              <UpgradePath useCaseMode={useCaseMode} />
-            )}
-            
-            {!showUpgradePath && (
-              <p className="text-xs text-text-muted/70">View upgrade recommendations</p>
-            )}
-          </div>
-          
-          {/* Power Consumption Analysis - Tier 3 (Advanced, Collapsible) */}
-          <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-xs text-text-muted">Power Analysis</h3>
-              <button
-                type="button"
-                onClick={() => setShowPowerConsumption((v) => !v)}
-                className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
-                aria-expanded={showPowerConsumption}
-              >
-                {showPowerConsumption ? 'Collapse' : 'Expand'}
-              </button>
-            </div>
-            
-            {showPowerConsumption && (
-              <PowerConsumptionVisual />
-            )}
-            
-            {!showPowerConsumption && (
-              <p className="text-xs text-text-muted/70">View power consumption estimates</p>
-            )}
-          </div>
+          )}
 
           {/* Debug Panel - Tier 3 (Hidden unless Advanced Mode) */}
           {process.env.NODE_ENV === 'development' && (
@@ -2138,7 +2352,7 @@ export default function BuilderPage() {
       {/* Part Comparison Modal */}
       {comparingParts && (() => {
         const { part1, part2, category } = comparingParts;
-        const categoryLabel = PART_CATEGORIES.find(c => c.key === category)?.label || category;
+        const categoryLabel = BUILD_ORDER.find(c => c.key === category)?.label || category;
         const categoryParts = partsByCategory[category] || [];
         
         const getComparisonFields = () => {

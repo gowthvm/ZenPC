@@ -136,11 +136,11 @@ export default function CookiesPage() {
                   Most web browsers allow you to control cookies through their settings. You can set your browser to refuse cookies, delete cookies, or notify you when cookies are being set. However, disabling essential cookies may affect your ability to use ZenPC.
                 </p>
                 <p className="text-text-muted leading-relaxed mt-2">
-                  Here's how to manage cookies in popular browsers:
+                  Here&apos;s how to manage cookies in popular browsers:
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-text-muted ml-4 mt-2">
                   <li><strong>Chrome:</strong> Settings → Privacy and security → Cookies and other site data</li>
-                  <li><strong>Firefox:</strong> Options → Privacy & Security → Cookies and Site Data</li>
+                  <li><strong>Firefox:</strong> Options → Privacy &amp; Security → Cookies and Site Data</li>
                   <li><strong>Safari:</strong> Preferences → Privacy → Cookies and website data</li>
                   <li><strong>Edge:</strong> Settings → Cookies and site permissions → Cookies and site data</li>
                 </ul>
@@ -152,7 +152,7 @@ export default function CookiesPage() {
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-text-muted ml-4">
                   <li>You may need to sign in repeatedly</li>
-                  <li>Your build progress may not be saved if you're not logged in</li>
+                  <li>Your build progress may not be saved if you&apos;re not logged in</li>
                   <li>Your preferences and settings may not be remembered</li>
                   <li>Some security features may not function correctly</li>
                 </ul>
@@ -163,17 +163,17 @@ export default function CookiesPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold text-text-primary">Third-Party Cookies</h2>
             <p className="text-text-muted leading-relaxed">
-              ZenPC does not use third-party cookies. We don't embed third-party services that set their own cookies, and we don't use advertising networks or social media plugins that would place tracking cookies on your device.
+                  ZenPC does not use third-party cookies. We don&apos;t embed third-party services that set their own cookies, and we don&apos;t use advertising networks or social media plugins that would place tracking cookies on your device.
             </p>
             <p className="text-text-muted leading-relaxed">
-              The only exception would be if we were to integrate with a payment processor in the future, which would require cookies for secure transaction processing. In such cases, we would clearly disclose this and provide information about the third party's cookie practices.
+              The only exception would be if we were to integrate with a payment processor in the future, which would require cookies for secure transaction processing. In such cases, we would clearly disclose this and provide information about the third party&apos;s cookie practices.
             </p>
           </section>
 
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold text-text-primary">Local Storage</h2>
             <p className="text-text-muted leading-relaxed">
-              In addition to cookies, ZenPC may use browser local storage to temporarily store your build data and preferences. This data is stored locally on your device and is not transmitted to our servers unless you're logged in and choose to save your build.
+              In addition to cookies, ZenPC may use browser local storage to temporarily store your build data and preferences. This data is stored locally on your device and is not transmitted to our servers unless you&apos;re logged in and choose to save your build.
             </p>
             <p className="text-text-muted leading-relaxed">
               You can clear local storage through your browser settings, similar to clearing cookies. This will remove any locally stored build data.

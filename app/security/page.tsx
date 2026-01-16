@@ -177,7 +177,7 @@ export default function SecurityPage() {
               <li>Email security concerns to <a href="mailto:security@zenpc.app" className="text-accent hover:underline">security@zenpc.app</a></li>
               <li>Provide detailed information about the vulnerability</li>
               <li>Allow us time to address the issue before public disclosure</li>
-              <li>Avoid accessing or modifying data that isn't yours</li>
+              <li>Avoid accessing or modifying data that isn&apos;t yours</li>
             </ul>
             <p className="text-text-muted leading-relaxed mt-4">
               We appreciate responsible disclosure and will work with security researchers to address issues promptly. We may acknowledge responsible disclosures (with your permission) but will never pursue legal action against researchers acting in good faith.
@@ -225,7 +225,7 @@ export default function SecurityPage() {
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold text-text-primary">Compliance & Certifications</h2>
             <p className="text-text-muted leading-relaxed">
-              While we're a smaller service, we follow security best practices aligned with industry standards. Our infrastructure provider maintains SOC 2 Type II compliance, and we implement security controls consistent with GDPR principles, even if not formally certified.
+              While we&apos;re a smaller service, we follow security best practices aligned with industry standards. Our infrastructure provider maintains SOC 2 Type II compliance, and we implement security controls consistent with GDPR principles, even if not formally certified.
             </p>
           </section>
 

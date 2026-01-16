@@ -47,7 +47,7 @@ export function generateFiltersForCategory(
 
   // Collect all unique values for each spec from parts
   const specValues: Record<string, Set<any>> = {};
-  const specNumbers: Record<string, number[]> = [];
+  const specNumbers: Record<string, number[]> = {} as Record<string, number[]>;
 
   parts.forEach(part => {
     specs.forEach(({ key }) => {

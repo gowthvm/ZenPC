@@ -68,9 +68,9 @@ function analyzeCPUGPUBalance(
   const cpuTier = getCPUPerformanceTier(cpu);
   const gpuTier = getGPUPerformanceTier(gpu);
   
-  const tierOrder = { entry: 0, mid: 1, high: 2, enthusiast: 3 };
-  const cpuTierNum = tierOrder[cpuTier] || 0;
-  const gpuTierNum = tierOrder[gpuTier] || 0;
+  const tierOrder: Record<string, number> = { entry: 0, mid: 1, high: 2, enthusiast: 3, unknown: -1 };
+  const cpuTierNum = tierOrder[cpuTier] ?? 0;
+  const gpuTierNum = tierOrder[gpuTier] ?? 0;
   const tierDiff = cpuTierNum - gpuTierNum;
 
   if (useCase === 'gaming') {
