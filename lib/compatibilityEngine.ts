@@ -52,28 +52,39 @@ export interface CompatibilityConfirmation {
  * Supports both flat structure and nested data object
  */
 function getSpecValue(part: any, specKey: string): any {
-  if (!part) return undefined;
+  if (!part) {
+    console.log(`⚠️  getSpecValue: part is null/undefined for specKey: ${specKey}`);
+    return undefined;
+  }
+  
+  console.log(`🔍 getSpecValue: looking for ${specKey} in part:`, part);
   
   // Try nested data structure first (Supabase format)
   if (part.data && typeof part.data === 'object') {
+    console.log(`📁 Checking nested data structure for ${specKey}`);
+    
     // Check if it's grouped (e.g., data.performance.boost_clock_ghz)
     const groups = ['performance', 'compatibility', 'power', 'physical', 'memory', 'connectivity', 'features'];
     for (const group of groups) {
       if (part.data[group] && part.data[group][specKey] !== undefined) {
+        console.log(`✅ Found ${specKey} in data.${group}:`, part.data[group][specKey]);
         return part.data[group][specKey];
       }
     }
     // Check flat structure in data
     if (part.data[specKey] !== undefined) {
+      console.log(`✅ Found ${specKey} in data:`, part.data[specKey]);
       return part.data[specKey];
     }
   }
   
   // Try flat structure on part itself
   if (part[specKey] !== undefined) {
+    console.log(`✅ Found ${specKey} in part:`, part[specKey]);
     return part[specKey];
   }
   
+  console.log(`❌ ${specKey} not found in part structure`);
   return undefined;
 }
 
@@ -166,6 +177,8 @@ function evaluateRule(
  * Fetch all active compatibility rules from Supabase
  */
 export async function fetchCompatibilityRules(): Promise<CompatibilityRule[]> {
+  console.log('📡 Fetching compatibility rules from Supabase...');
+  
   const { data, error } = await supabase
     .from('compatibility_rules')
     .select('*')
@@ -173,8 +186,13 @@ export async function fetchCompatibilityRules(): Promise<CompatibilityRule[]> {
     .order('severity', { ascending: false });
   
   if (error) {
-    console.error('Error fetching compatibility rules:', error);
+    console.error('❌ Error fetching compatibility rules:', error);
     return [];
+  }
+  
+  console.log('✅ Successfully fetched compatibility rules:', data?.length || 0, 'rules');
+  if (data && data.length > 0) {
+    console.log('📋 Sample rules:', data.slice(0, 3));
   }
   
   return (data || []) as CompatibilityRule[];
@@ -189,7 +207,11 @@ export async function evaluateCompatibility(
   issues: CompatibilityIssue[];
   confirmations: CompatibilityConfirmation[];
 }> {
+  console.log('🔍 Evaluating compatibility for parts:', Object.keys(selectedParts));
+  
   const rules = await fetchCompatibilityRules();
+  console.log('📋 Fetched compatibility rules:', rules.length, 'rules');
+  
   const issues: CompatibilityIssue[] = [];
   const confirmations: CompatibilityConfirmation[] = [];
   
@@ -200,14 +222,19 @@ export async function evaluateCompatibility(
     
     // Skip if required parts are not selected
     if (!sourcePart || !targetPart) {
+      console.log(`⏭️  Skipping rule ${rule.id}: missing parts (${rule.source_category}→${rule.target_category})`);
       continue;
     }
+    
+    console.log(`🔧 Evaluating rule: ${rule.source_category}.${rule.source_field} ${rule.operator} ${rule.target_category}.${rule.target_field}`);
     
     const issue = evaluateRule(rule, sourcePart, targetPart);
     
     if (issue) {
+      console.log(`❌ Compatibility issue found:`, issue);
       issues.push(issue);
     } else {
+      console.log(`✅ Rule passed: ${rule.source_category} ↔ ${rule.target_category}`);
       // Rule passed - create a confirmation
       const sourceSpec = getSpecDefinition(rule.source_field);
       const targetSpec = getSpecDefinition(rule.target_field);
@@ -233,6 +260,8 @@ export async function evaluateCompatibility(
   };
   
   issues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+  
+  console.log(`📊 Compatibility evaluation complete: ${issues.length} issues, ${confirmations.length} confirmations`);
   
   return { issues, confirmations };
 }

@@ -1,6 +1,6 @@
 // moved from app/app/builder/page.tsx
 'use client';
-import { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { useBuilderStore } from '@/store/builder';
 
@@ -116,9 +116,9 @@ const PartCard = memo(({
           </div>
         </div>
         <div className="flex flex-col items-end ml-3">
-          {part.data?.price && (
+          {part.price && (
             <div className="font-medium text-sm text-accent">
-              ${part.data.price}
+              ${part.price}
             </div>
           )}
           {isSelected && (
@@ -164,6 +164,12 @@ import { getSpecValue, getSpecsForCategory } from '@/lib/specDictionary';
 import PartSpecs, { PartSpecsCompact } from '@/app/components/PartSpecs';
 import { analyzeBuildHealth, type BuildHealthResult } from '@/lib/buildHealth';
 import { analyzeBottlenecks, type BottleneckAnalysis } from '@/lib/bottleneckAnalysis';
+import { SmartFilters, type FilterState } from '@/components/builder/SmartFilters';
+import { VisualComparisonGrid } from '@/components/builder/VisualComparisonGrid';
+import { QuickAddTemplates } from '@/components/builder/QuickAddTemplates';
+import { CompatibilityMap } from '@/components/builder/CompatibilityMap';
+import { UpgradePath } from '@/components/builder/UpgradePath';
+import { PowerConsumptionVisual } from '@/components/builder/PowerConsumptionVisual';
 
 // Example static presets (IDs/names should match real Supabase data for best experience)
 const PRESETS: Array<{
@@ -180,6 +186,7 @@ const PRESET_USE_CASES: Record<string, string> = {
 
 export default function BuilderPage() {
   const { selected, setPart, reset } = useBuilderStore();
+  
   // Landing-style ambient cursor glow (purely visual)
   const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 });
   const rafRef = useRef<number>();
@@ -209,6 +216,15 @@ export default function BuilderPage() {
   const [showAdvancedInsights, setShowAdvancedInsights] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [assemblyReadyMode, setAssemblyReadyMode] = useState(false);
+  
+  // Advanced panel states for Tier 3 components
+  const [showCompatibilityMap, setShowCompatibilityMap] = useState(false);
+  const [showUpgradePath, setShowUpgradePath] = useState(false);
+  const [showPowerConsumption, setShowPowerConsumption] = useState(false);
+  
+  // Enhanced Part Discovery states
+  const [activeFilters, setActiveFilters] = useState<Record<string, FilterState>>({});
+  const [showQuickAddTemplates, setShowQuickAddTemplates] = useState(false);
   
   // Compatibility state (using new engine)
   const [compatibilityState, setCompatibilityState] = useState<{
@@ -439,12 +455,12 @@ export default function BuilderPage() {
           const byCategory = (cat: string) => map[cat] || [];
           const pickFirst = (cat: string) => byCategory(cat)[0]?.id;
           const pickCheapest = (cat: string) => {
-            const parts = byCategory(cat).filter(p => typeof p.data?.price === 'number');
-            return parts.length ? parts.reduce((min, p) => p.data.price < min.data.price ? p : min).id : undefined;
+            const parts = byCategory(cat).filter(p => typeof p.price === 'number');
+            return parts.length ? parts.reduce((min, p) => p.price < min.price ? p : min).id : undefined;
           };
           const pickMostExpensive = (cat: string) => {
-            const parts = byCategory(cat).filter(p => typeof p.data?.price === 'number');
-            return parts.length ? parts.reduce((max, p) => p.data.price > max.data.price ? p : max).id : undefined;
+            const parts = byCategory(cat).filter(p => typeof p.price === 'number');
+            return parts.length ? parts.reduce((max, p) => p.price > max.price ? p : max).id : undefined;
           };
 
           const presets = [
@@ -553,9 +569,95 @@ export default function BuilderPage() {
     setSearchQueries(prev => ({ ...prev, [category]: query }));
   }, []);
 
-  // Toggle category expansion
+  // Handle filter change for a specific category
+  const handleFiltersChange = useCallback((category: string, filters: FilterState) => {
+    setActiveFilters(prev => ({ ...prev, [category]: filters }));
+  }, []);
+
+  // Apply filters to parts
+  const getFilteredParts = useCallback((category: string, parts: any[]) => {
+    const filters = activeFilters[category];
+    if (!filters) return parts;
+
+    return parts.filter(part => {
+      // Price filter
+      if (typeof part.price === 'number') {
+        if (part.price < filters.priceRange[0] || part.price > filters.priceRange[1]) {
+          return false;
+        }
+      }
+
+      // Brand filter
+      if (filters.brands.length > 0 && part.brand) {
+        if (!filters.brands.includes(part.brand)) {
+          return false;
+        }
+      }
+
+      // Spec filters
+      for (const [specKey, specFilter] of Object.entries(filters.specFilters)) {
+        const value = getSpecValue(part, specKey);
+        
+        if (value === undefined || value === null) continue;
+
+        if (specFilter.type === 'range' && specFilter.min !== undefined && specFilter.max !== undefined) {
+          const numValue = Number(value);
+          if (isNaN(numValue) || numValue < specFilter.min || numValue > specFilter.max) {
+            return false;
+          }
+        } else if (specFilter.type === 'equals') {
+          if (String(value).toLowerCase() !== String(specFilter.value).toLowerCase()) {
+            return false;
+          }
+        } else if (specFilter.type === 'boolean') {
+          if (Boolean(value) !== Boolean(specFilter.value)) {
+            return false;
+          }
+        }
+      }
+
+      // Compatibility filter
+      if (filters.compatibilityOnly) {
+        // This is async, so we'll handle it in the component
+        // For now, just include all parts and let the component handle compatibility checking
+      }
+
+      return true;
+    });
+  }, [activeFilters]);
+
+  // Handle template parts selection
+  const handleTemplatePartsSelect = useCallback((parts: Record<string, any>) => {
+    Object.entries(parts).forEach(([category, part]) => {
+      if (part && typeof part === 'object') {
+        setPart(category, part);
+      }
+    });
+    setShowQuickAddTemplates(false);
+  }, [setPart]);
+
+  // Toggle category expansion with single-section logic for primary parts
   const toggleCategoryExpansion = useCallback((category: string) => {
-    setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+    const isPrimaryCategory = ['cpu', 'gpu', 'motherboard'].includes(category);
+    
+    if (isPrimaryCategory) {
+      // For primary categories, collapse all others and expand this one
+      setExpandedCategories(prev => {
+        const newState = { ...prev };
+        // Collapse all primary categories
+        ['cpu', 'gpu', 'motherboard'].forEach(cat => {
+          if (cat !== category) {
+            newState[cat] = false;
+          }
+        });
+        // Toggle the clicked category
+        newState[category] = !prev[category];
+        return newState;
+      });
+    } else {
+      // For secondary categories, just toggle normally
+      setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+    }
   }, []);
 
   const handleSelectPart = useCallback((category: string, partId: string) => {
@@ -582,12 +684,17 @@ export default function BuilderPage() {
     const filtered: Record<string, any[]> = {};
     Object.entries(partsByCategory).forEach(([category, parts]) => {
       const query = searchQueries[category] || '';
-      filtered[category] = query.trim() 
+      let categoryParts = query.trim() 
         ? parts.filter((part: any) => matchesSearchQuery(part, query))
         : parts;
+      
+      // Apply smart filters
+      categoryParts = getFilteredParts(category, categoryParts);
+      
+      filtered[category] = categoryParts;
     });
     return filtered;
-  }, [partsByCategory, searchQueries, matchesSearchQuery]);
+  }, [partsByCategory, searchQueries, matchesSearchQuery, getFilteredParts]);
 
   const confirmReplace = () => {
     if (replacePreview) {
@@ -629,6 +736,17 @@ export default function BuilderPage() {
     return { status: 'attention', label: 'Needs Attention', color: 'text-yellow-300', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/30' };
   };
 
+  // Calculate current budget total
+  const currentBudget = useMemo(() => Object.values(selected).reduce((sum, part) => {
+    if (!part || typeof part !== 'object' || Array.isArray(part) || Object.keys(part).length === 0) return sum;
+    // Price is stored as top-level column in Supabase, not in data
+    const price = part.price;
+    if (typeof price === 'number' && !isNaN(price)) {
+      return sum + price;
+    }
+    return sum;
+  }, 0), [selected]);
+
   // Budget status
   const getBudgetStatus = () => {
     if (!budgetMax) return null;
@@ -665,7 +783,7 @@ export default function BuilderPage() {
   };
 
   const getSelectedPrice = (part: any) => {
-    const p = part?.data?.price;
+    const p = part?.price;
     return typeof p === 'number' && !isNaN(p) ? p : 0;
   };
 
@@ -907,17 +1025,7 @@ export default function BuilderPage() {
     });
   };
 
-  const currentBudget = Object.values(selected).reduce((sum, part) => {
-	if (!part || typeof part !== 'object' || Array.isArray(part) || Object.keys(part).length === 0) return sum;
-	// Supabase parts store price inside data
-	const price = part.data?.price;
-	if (typeof price === 'number' && !isNaN(price)) {
-	  return sum + price;
-	}
-	return sum;
-	}, 0);
-
-	return (
+  return (
 		<div className="relative w-full min-h-dvh overflow-hidden">
       {/* Ambient background layers (landing-consistent) */}
       <div
@@ -946,15 +1054,15 @@ export default function BuilderPage() {
         <div className="absolute -right-24 top-80 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-10 space-y-8">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-6">
 			{/* Guided Mode Toggle */}
-			<div className="card p-5 md:p-6 flex flex-col gap-4">
+			<div className="card p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-6">
 				<div className="flex items-center gap-4">
 					<h1 className="font-display text-3xl md:text-4xl font-bold bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">
             PC Builder
           </h1>
-          <div className="hidden lg:flex items-center gap-2 ml-2">
+          <div className="hidden lg:flex items-center gap-2 ml-6">
             {(['Balanced', 'Gaming', 'Productivity', 'Creator'] as const).map((m) => (
               <button
                 key={m}
@@ -962,8 +1070,8 @@ export default function BuilderPage() {
                 onClick={() => setUseCaseMode(m)}
                 className={`px-3 py-1.5 rounded-full text-xs border transition-base ${
                   useCaseMode === m
-                    ? 'bg-surface-1/60 border-accent/30 text-accent shadow-glass'
-                    : 'bg-surface-1/30 border-border/20 text-text-muted hover:bg-surface-2/40 hover:text-text-primary'
+                    ? 'bg-surface-2/50 border-accent/40 text-accent'
+                    : 'bg-surface-1/30 border-border/30 text-text-muted hover:bg-surface-1/50 hover:text-text-primary'
                 }`}
                 aria-pressed={useCaseMode === m}
               >
@@ -971,7 +1079,7 @@ export default function BuilderPage() {
               </button>
             ))}
           </div>
-					<label className="flex items-center gap-2 ml-4">
+					<label className="flex items-center gap-2 ml-6">
             <input
               type="checkbox"
               checked={guidedMode}
@@ -983,7 +1091,7 @@ export default function BuilderPage() {
 					{/* Quick Jump Dropdown */}
           <select
             aria-label="Quick jump to category"
-            className="ml-4 px-3 py-2 rounded-md border border-border/20 text-sm bg-surface-1/50 backdrop-blur-glass shadow-glass/30 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
+            className="ml-6 px-3 py-2 rounded-md border border-border/30 text-sm bg-surface-1/50 hover:border-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
             onChange={e => {
               const el = document.getElementById(`cat-${e.target.value}`);
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1008,23 +1116,30 @@ export default function BuilderPage() {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
+            onClick={() => setShowQuickAddTemplates(!showQuickAddTemplates)}
+            className="px-4 py-2 rounded-lg border border-accent/40 bg-accent/10 text-accent text-sm font-medium hover:bg-accent/20 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-base"
+          >
+            {showQuickAddTemplates ? 'Hide Templates' : 'Quick Add Templates'}
+          </button>
+          <button
+            type="button"
             onClick={duplicateBuild}
-            className="px-4 py-2 rounded-lg border border-border/20 bg-surface-1/35 backdrop-blur-glass text-sm font-medium hover:bg-surface-2/50 hover:border-border/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] shadow-glass/30 transition-base"
+            className="px-4 py-2 rounded-lg border border-border/30 bg-surface-1/50 text-sm font-medium hover:bg-surface-2/50 hover:border-border/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-base"
           >
             Duplicate Build
           </button>
           <button
             type="button"
             onClick={() => setShowSummary(true)}
-            className="px-4 py-2 rounded-lg border border-border/20 bg-surface-1/35 backdrop-blur-glass text-sm font-medium hover:bg-surface-2/50 hover:border-border/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] shadow-glass/30 transition-base"
+            className="px-4 py-2 rounded-lg border border-border/30 bg-surface-1/50 text-sm font-medium hover:bg-surface-2/50 hover:border-border/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-base"
           >
             Summary & Export
           </button>
           <button
             type="button"
             onClick={() => setAssemblyReadyMode((v) => !v)}
-            className={`px-4 py-2 rounded-lg border bg-surface-1/35 backdrop-blur-glass text-sm font-medium shadow-glass/30 transition-base hover:bg-surface-2/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] ${
-              assemblyReadyMode ? 'border-accent/30 text-accent' : 'border-border/20 text-text-primary'
+            className={`px-4 py-2 rounded-lg border bg-surface-1/50 text-sm font-medium transition-base hover:bg-surface-2/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] ${
+              assemblyReadyMode ? 'border-accent/40 text-accent' : 'border-border/30 text-text-primary'
             }`}
             aria-pressed={assemblyReadyMode}
           >
@@ -1046,10 +1161,32 @@ export default function BuilderPage() {
         </div>
       </div>
 
+      {/* Quick Add Templates Section */}
+      {showQuickAddTemplates && (
+        <div className="animate-in slide-in-from-top-2 duration-300">
+          <QuickAddTemplates
+            partsByCategory={partsByCategory}
+            selectedParts={selected}
+            onSelectParts={handleTemplatePartsSelect}
+            className="mb-6"
+          />
+        </div>
+      )}
+
         <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-4">
+        <div className="md:col-span-2 space-y-6">
+          {/* Primary Building Flow Header */}
+          <div className="card p-5 border-accent/25 bg-accent/5">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-accent"></div>
+              <h2 className="font-semibold text-lg text-text-primary">Component Selection</h2>
+              <div className="text-xs text-text-muted ml-auto">
+                {getBuildCompletion().completed}/{getBuildCompletion().total} components selected
+              </div>
+            </div>
+          </div>
           {loading && (
-            <div className="card p-6">
+            <div className="card p-5">
               <div className="animate-pulse space-y-3">
                 <div className="h-4 w-40 rounded bg-surface-2/60" />
                 <div className="h-3 w-64 rounded bg-surface-2/50" />
@@ -1058,7 +1195,7 @@ export default function BuilderPage() {
           )}
 
           {error && (
-            <div className="card p-4 border border-red-500/30 bg-surface-1/40 text-red-200 text-sm flex items-center gap-2">
+            <div className="card p-5 border border-red-500/30 bg-surface-1/40 text-red-200 text-sm flex items-center gap-2">
               <span className="text-red-200/90">Failed to load parts. Please check your connection or try again.</span>
               <button
                 type="button"
@@ -1080,24 +1217,27 @@ export default function BuilderPage() {
             const parts = filteredPartsByCategory[key] || [];
 
             						return (
-							<div
-								key={key}
-								id={`cat-${key}`}
-								className={`card p-5 md:p-6 ${
-                  isNext
-                    ? 'ring-2 ring-accent/60 ring-offset-2 ring-offset-bg shadow-glass'
-                    : ''
-                } ${
-                  selectedPart
-                    ? 'border-accent/25 shadow-glass hover:border-accent/30'
-                    : ''
-                }`}
-							>
-                <div className="flex items-center justify-between mb-3">
+									<div
+										key={key}
+										id={`cat-${key}`}
+										className={`card p-5 md:p-6 transition-all duration-300 ${
+                          isNext
+                            ? 'ring-2 ring-accent/50 ring-offset-2 ring-offset-bg border-accent/35 bg-accent/8'
+                            : selectedPart
+                            ? 'border-accent/25 bg-surface-1/45 hover:border-accent/30'
+                            : 'border-border/15 bg-surface-1/30 hover:border-border/25'
+                        }`}
+									>
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div>
-                      <h2 className="font-semibold text-text-primary">{label}</h2>
-                      <p className="text-xs text-text-muted">
+                      <h2 className="font-semibold text-lg text-text-primary flex items-center gap-2">
+                        {label}
+                        {selectedPart && (
+                          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                        )}
+                      </h2>
+                      <p className="text-sm text-text-muted mt-1">
                         {selectedPart
                           ? getPartLabel(key, selectedPart)
                           : 'No part selected yet'}
@@ -1119,9 +1259,9 @@ export default function BuilderPage() {
                     </button>
                   </div>
                   <div className="flex items-center gap-2 text-right text-sm">
-                    <div className="font-medium text-accent">
-                      {selectedPart?.data?.price
-                        ? `$${selectedPart.data.price.toFixed(2)}`
+                    <div className="font-bold text-accent text-lg">
+                      {selectedPart?.price
+                        ? `$${selectedPart.price.toFixed(2)}`
                         : '--'}
                     </div>
                       {selectedPart && (
@@ -1160,11 +1300,48 @@ export default function BuilderPage() {
                     </div>
                   </div>
 
+                  {/* Compact summary when collapsed */}
+                  {!isExpanded && selectedPart && (
+                    <div className="mt-4 p-3 rounded-lg bg-surface-1/20 border border-border/10">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span className="text-text-muted">Selected:</span>
+                          <span className="text-text-primary font-medium">{selectedPart.name}</span>
+                        </div>
+                        <span className="text-accent font-medium">
+                          ${selectedPart.price?.toFixed(2) || '--'}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-xs text-text-muted">
+                        {getPartLabel(key, selectedPart)}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Collapsible part selection area */}
                   {isExpanded && (
-                    <div className="flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex flex-col gap-4 animate-in slide-in-from-top-2 duration-200">
+                      {/* Smart Filters */}
+                      <SmartFilters
+                        category={key as any}
+                        parts={allParts}
+                        selectedParts={selected}
+                        onFiltersChange={(filters) => handleFiltersChange(key, filters)}
+                        className="mb-4"
+                      />
+
+                      {/* Visual Comparison Grid */}
+                      <VisualComparisonGrid
+                        category={key as any}
+                        parts={allParts}
+                        selectedParts={selected}
+                        onSelectPart={(category, partId) => handleSelectPart(category, partId)}
+                        className="mb-4"
+                      />
+
                       {/* Part-specific search input */}
-                      <div className="relative mb-3">
+                      <div className="relative mb-4">
                         <svg 
                           className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none transition-colors" 
                           fill="none" 
@@ -1193,7 +1370,7 @@ export default function BuilderPage() {
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-4">
                         {loading ? (
                           <div className="animate-pulse text-text-muted text-xs">Loading parts...</div>
                         ) : error ? (
@@ -1202,14 +1379,14 @@ export default function BuilderPage() {
                           <>
                             {/* Part selection dropdown */}
                             <select
-                              className="w-full px-3 py-2.5 rounded-md bg-surface-1/50 border border-border/20 text-sm shadow-glass/30 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
+                              className="w-full px-3 py-2.5 rounded-md bg-surface-1/50 border border-border/20 text-sm hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
                               value={selectedPart?.id ?? ''}
                               onChange={(e) => handleSelectPart(key, e.target.value)}
                             >
                               <option value="">Select a {label}</option>
                               {parts.map((part: any) => (
                                 <option key={part.id} value={part.id}>
-                                  {part.name} {part.data?.price ? `($${part.data.price})` : ''}
+                                  {part.name} {part.price ? `($${part.price})` : ''}
                                 </option>
                               ))}
                             </select>
@@ -1242,7 +1419,7 @@ export default function BuilderPage() {
                 
                 {/* Part Specs Display */}
                 {selectedPart && (
-                  <div className="mt-4">
+                  <div className="mt-5">
                     <PartSpecs 
                       part={selectedPart} 
                       category={key as any}
@@ -1256,12 +1433,16 @@ export default function BuilderPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="card p-5 md:p-6 space-y-3">
-            <h2 className="font-semibold text-text-primary">Build Summary</h2>
+          {/* Build Summary - Tier 1 (Highest Priority) */}
+          <div className="card p-5 space-y-4 border-border/20 bg-surface-1/25">
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-text-primary">Build Summary</h2>
+              <div className="w-2 h-2 rounded-full bg-green-500 ml-auto"></div>
+            </div>
             <div className="flex items-center justify-between mb-2">
               <input
                 type="text"
-                className="font-display text-lg font-bold bg-transparent outline-none border-none w-2/3 placeholder:text-text-muted/60"
+                className="font-display text-base font-medium bg-transparent outline-none border-none w-2/3 placeholder:text-text-muted/60 text-text-primary"
                 value={buildName}
                 onChange={handleBuildNameChange}
                 disabled={!user}
@@ -1283,7 +1464,7 @@ export default function BuilderPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-text-muted">Estimated total</span>
-              <span className="font-display text-2xl font-bold text-accent">
+              <span className="font-display text-xl font-semibold text-accent">
                 ${currentBudget.toFixed(2)}
               </span>
             </div>
@@ -1295,8 +1476,8 @@ export default function BuilderPage() {
                 // Show category distribution if no budget set
                 const categoryTotals: Record<string, number> = {};
                 Object.entries(selected).forEach(([cat, part]) => {
-                  if (part?.data?.price) {
-                    categoryTotals[cat] = (categoryTotals[cat] || 0) + part.data.price;
+                  if (part?.price) {
+                    categoryTotals[cat] = (categoryTotals[cat] || 0) + part.price;
                   }
                 });
                 const hasDistribution = Object.keys(categoryTotals).length > 0;
@@ -1304,7 +1485,7 @@ export default function BuilderPage() {
                 if (hasDistribution) {
                   return (
                     <div className="mt-3 p-3 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
-                      <div className="text-xs font-semibold text-text-primary mb-2">Budget Distribution:</div>
+                      <div className="text-xs font-medium text-text-primary mb-2">Budget Distribution:</div>
                       <div className="space-y-1.5">
                         {Object.entries(categoryTotals)
                           .sort(([, a], [, b]) => b - a)
@@ -1338,16 +1519,18 @@ export default function BuilderPage() {
               if (!budgetStatus) return null;
               
               return (
-                <div className={`mt-3 p-3 rounded-lg border ${budgetStatus.status === 'over' ? 'border-red-500/30 bg-red-500/10' : budgetStatus.status === 'near' ? 'border-yellow-500/30 bg-yellow-500/10' : 'border-green-500/30 bg-green-500/10'} backdrop-blur-glass`}>
+                <div className={`mt-3 p-3 rounded-lg border ${
+                  budgetStatus.status === 'over' ? 'border-red-500/30 bg-red-500/10' : budgetStatus.status === 'near' ? 'border-yellow-500/30 bg-yellow-500/10' : 'border-green-500/30 bg-green-500/10'
+                }`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs font-semibold ${budgetStatus.color}`}>
+                    <span className={`text-xs font-medium ${budgetStatus.color}`}>
                       {budgetStatus.label}
                     </span>
                     <span className="text-xs text-text-muted">
                       {budgetStatus.percentage.toFixed(1)}% of budget
                     </span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-surface-2/50 overflow-hidden">
+                  <div className={`w-full h-2 rounded-full bg-surface-2/50 overflow-hidden`}>
                     <div 
                       className={`h-full rounded-full transition-all duration-base ${
                         budgetStatus.status === 'over' ? 'bg-red-400' : 
@@ -1403,7 +1586,7 @@ export default function BuilderPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${health.color.replace('text-', 'bg-')}`} />
-                      <span className={`font-semibold text-sm ${health.color}`}>{health.label}</span>
+                      <span className={`font-medium text-sm ${health.color}`}>{health.label}</span>
                     </div>
                     {health.status === 'ready' && (
                       <div className="px-2 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-xs text-green-400 font-medium">
@@ -1428,7 +1611,7 @@ export default function BuilderPage() {
               
               return (
                 <div className="mt-3 p-3 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
-                  <div className="text-xs font-semibold text-text-primary mb-2">Missing Components:</div>
+                  <div className="text-xs font-medium text-text-primary mb-2">Missing Components:</div>
                   <div className="flex flex-wrap gap-2">
                     {completion.missing.map(cat => {
                       const category = PART_CATEGORIES.find(c => c.key === cat);
@@ -1450,7 +1633,7 @@ export default function BuilderPage() {
               
               return (
                 <div className="mt-3 space-y-2">
-                  <div className="text-xs font-semibold text-text-primary mb-1">Compatibility Issues:</div>
+                  <div className="text-xs font-medium text-text-primary mb-1">Compatibility Issues:</div>
                   {issues.map((issue, idx) => (
                     <div
                       key={idx}
@@ -1460,7 +1643,7 @@ export default function BuilderPage() {
                           : 'border-yellow-500/30 bg-yellow-500/10'
                       } backdrop-blur-glass`}
                     >
-                      <div className={`font-semibold text-xs mb-1 ${
+                      <div className={`font-medium text-xs mb-1 ${
                         issue.severity === 'error' ? 'text-red-300' : 'text-yellow-200'
                       }`}>
                         {issue.type}
@@ -1484,7 +1667,7 @@ export default function BuilderPage() {
               return (
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="text-xs font-semibold text-text-primary">Compatibility Confirmations:</div>
+                    <div className="text-xs font-medium text-text-primary">Compatibility Confirmations:</div>
                     <button
                       onClick={() => setShowCompatibilities(false)}
                       className="text-xs text-text-muted hover:text-text-primary transition-colors"
@@ -1495,7 +1678,7 @@ export default function BuilderPage() {
                   {confirmations.map((comp, idx) => (
                     <div
                       key={idx}
-                      className="p-2 rounded-lg border border-green-500/20 bg-green-500/5 backdrop-blur-glass"
+                      className="p-2 rounded-lg border border-green-500/20 bg-green-500/5"
                     >
                       <div className="text-xs font-medium text-green-300 mb-0.5">{comp.type}</div>
                       <div className="text-xs text-text-muted">{comp.explanation}</div>
@@ -1506,10 +1689,10 @@ export default function BuilderPage() {
             })()}
           </div>
 
-          {/* Build Health Panel */}
-          <div className="card p-5 md:p-6 space-y-3">
+          {/* Build Health - Tier 1 (High Priority) */}
+          <div className="card p-5 space-y-4 border-border/15 bg-surface-1/20">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-text-primary">Build Health</h3>
+              <h3 className="font-semibold text-sm text-text-primary">Build Health</h3>
               {buildHealthLoading && (
                 <span className="text-xs text-text-muted animate-pulse">Analyzing...</span>
               )}
@@ -1518,7 +1701,7 @@ export default function BuilderPage() {
             {buildHealth && (
               <div className="space-y-4">
                 {/* Overall Rating */}
-                <div className={`p-4 rounded-lg border backdrop-blur-glass ${
+                <div className={`mt-4 p-4 rounded-lg border ${
                   buildHealth.overall === 'excellent' 
                     ? 'border-green-500/30 bg-green-500/10'
                     : buildHealth.overall === 'good'
@@ -1534,7 +1717,7 @@ export default function BuilderPage() {
                       : buildHealth.overall === 'acceptable' ? 'bg-yellow-400'
                       : 'bg-red-400'
                     }`} />
-                    <span className="font-semibold text-sm capitalize">{buildHealth.overall}</span>
+                    <span className="font-medium text-sm capitalize">{buildHealth.overall}</span>
                   </div>
                   <p className="text-xs text-text-muted">{buildHealth.summary}</p>
                 </div>
@@ -1556,10 +1739,10 @@ export default function BuilderPage() {
                           </span>
                         </div>
                       </summary>
-                      <div className="mt-2 p-3 rounded-lg bg-surface-1/20 border border-border/10 space-y-2">
+                      <div className={`p-3 rounded-lg bg-surface-1/20 border border-border/10 space-y-2`}>
                         <p className="text-xs text-text-muted">{category.explanation}</p>
                         {category.details.length > 0 && (
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {category.details.map((detail, i) => (
                               <div key={i} className="text-xs text-text-muted">• {detail}</div>
                             ))}
@@ -1585,152 +1768,191 @@ export default function BuilderPage() {
             )}
           </div>
 
-          {/* Bottleneck Analysis Panel */}
-          <div className="card p-5 md:p-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-text-primary">Performance Insights</h3>
-            </div>
-            
-            {bottleneckAnalysis && bottleneckAnalysis.insights.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-xs text-text-muted">{bottleneckAnalysis.summary}</p>
-                
-                <div className="space-y-2">
-                  {bottleneckAnalysis.insights.map((insight, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-lg border backdrop-blur-glass ${
-                        insight.type === 'bottleneck'
-                          ? 'border-orange-500/30 bg-orange-500/10'
-                          : insight.type === 'recommendation'
-                          ? 'border-blue-500/30 bg-blue-500/10'
-                          : 'border-green-500/30 bg-green-500/10'
-                      }`}
-                    >
-                      {insight.component && (
-                        <div className="text-xs font-medium text-text-primary mb-1">
-                          {insight.component.toUpperCase()}
-                        </div>
-                      )}
-                      <div className={`text-xs font-medium mb-1 ${
-                        insight.severity === 'suggestion' ? 'text-orange-300' : 'text-blue-300'
-                      }`}>
-                        {insight.message}
-                      </div>
-                      <div className="text-xs text-text-muted">{insight.explanation}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {(!bottleneckAnalysis || bottleneckAnalysis.insights.length === 0) && (
-              <p className="text-xs text-text-muted">No performance insights available. Add more components to see analysis.</p>
-            )}
-          </div>
 
-          <div className="card p-5 md:p-6 space-y-3">
+          {/* Performance Insights - Tier 2 (Secondary, Collapsible) */}
+          <div className="card p-4 space-y-3 border-border/10 bg-surface-1/15">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-text-primary">Advanced Insights</h3>
+              <h3 className="font-medium text-sm text-text-muted">Performance Insights</h3>
               <button
                 type="button"
                 onClick={() => setShowAdvancedInsights((v) => !v)}
-                className="px-3 py-1.5 rounded-md bg-surface-1/40 border border-border/20 text-xs text-text-primary hover:bg-surface-2/50 transition-base"
+                className="px-3 py-1.5 rounded-md bg-surface-1/30 border border-border/15 text-xs text-text-muted hover:bg-surface-1/40 hover:text-text-primary transition-base"
                 aria-expanded={showAdvancedInsights}
               >
                 {showAdvancedInsights ? 'Collapse' : 'Expand'}
               </button>
             </div>
-
+            
             {showAdvancedInsights && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
-                  <div className="text-xs font-semibold text-text-primary mb-2">Performance expectations</div>
-                  <div className="space-y-2">
-                    {getPerformanceExpectations().map((t, i) => (
-                      <div key={i} className="text-xs text-text-muted">
-                        - {t}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
-                  <div className="text-xs font-semibold text-text-primary mb-2">Use-case aware guidance</div>
-                  <div className="text-xs text-text-muted">
-                    {getUseCaseGuidance()}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
-                  <div className="text-xs font-semibold text-text-primary mb-2">Upgrade & longevity insights</div>
-                  <div className="space-y-2">
-                    {getUpgradeLongevityInsights().length === 0 ? (
-                      <div className="text-xs text-text-muted">Add core parts to unlock platform/upgrade insights.</div>
-                    ) : (
-                      getUpgradeLongevityInsights().map((t, i) => (
-                        <div key={i} className="text-xs text-text-muted">
-                          - {t}
+              <>
+                {bottleneckAnalysis && bottleneckAnalysis.insights.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-text-muted">{bottleneckAnalysis.summary}</p>
+                    
+                    <div className="space-y-2">
+                      {bottleneckAnalysis.insights.map((insight, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-lg border ${
+                            insight.type === 'bottleneck'
+                              ? 'border-orange-500/30 bg-orange-500/10'
+                              : insight.type === 'recommendation'
+                              ? 'border-blue-500/30 bg-blue-500/10'
+                              : 'border-green-500/30 bg-green-500/10'
+                          }`}
+                        >
+                          {insight.component && (
+                            <div className="text-xs font-medium text-text-primary mb-1">
+                              {insight.component.toUpperCase()}
+                            </div>
+                          )}
+                          <div className={`text-xs font-medium mb-1 ${
+                            insight.severity === 'suggestion' ? 'text-orange-300' : 'text-blue-300'
+                          }`}>
+                            {insight.message}
+                          </div>
+                          <div className="text-xs text-text-muted">{insight.explanation}</div>
                         </div>
-                      ))
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
-                  <div className="text-xs font-semibold text-text-primary mb-2">Real-world advisories</div>
-                  <div className="space-y-2">
-                    {getRealWorldWarnings().length === 0 ? (
-                      <div className="text-xs text-text-muted">No advisories yet.</div>
-                    ) : (
-                      getRealWorldWarnings().map((w, i) => (
-                        <div key={i} className="text-xs text-text-muted">
-                          - <span className="text-text-primary/90 font-medium">{w.title}:</span> {w.message}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-surface-1/30 backdrop-blur-glass border border-border/10">
-                  <div className="text-xs font-semibold text-text-primary mb-2">Cost-to-value signals</div>
-                  <div className="space-y-2">
-                    {getValueSignals().length === 0 ? (
-                      <div className="text-xs text-text-muted">No value signals detected.</div>
-                    ) : (
-                      getValueSignals().map((s, i) => (
-                        <div key={i} className="text-xs text-text-muted">
-                          - <span className="text-text-primary/90 font-medium">{s.title}:</span> {s.message}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
+                )}
+                
+                {(!bottleneckAnalysis || bottleneckAnalysis.insights.length === 0) && (
+                  <p className="text-xs text-text-muted">No performance insights available. Add more components to see analysis.</p>
+                )}
+              </>
+            )}
+            
+            {!showAdvancedInsights && (
+              <p className="text-xs text-text-muted">Click expand to view performance insights and bottlenecks.</p>
             )}
           </div>
 
-          <div className="card p-5 md:p-6 space-y-3">
-            <h3 className="font-semibold text-sm text-text-primary">Presets</h3>
+          {/* Compatibility Map - Tier 3 (Advanced, Collapsible) */}
+          <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-xs text-text-muted">Compatibility Map</h3>
+              <button
+                type="button"
+                onClick={() => setShowCompatibilityMap((v) => !v)}
+                className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
+                aria-expanded={showCompatibilityMap}
+              >
+                {showCompatibilityMap ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            
+            {showCompatibilityMap && (
+              <CompatibilityMap />
+            )}
+            
+            {!showCompatibilityMap && (
+              <p className="text-xs text-text-muted/70">View compatibility relationships</p>
+            )}
+          </div>
+          
+          {/* Upgrade Path Planning - Tier 3 (Advanced, Collapsible) */}
+          <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-xs text-text-muted">Upgrade Path</h3>
+              <button
+                type="button"
+                onClick={() => setShowUpgradePath((v) => !v)}
+                className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
+                aria-expanded={showUpgradePath}
+              >
+                {showUpgradePath ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            
+            {showUpgradePath && (
+              <UpgradePath useCaseMode={useCaseMode} />
+            )}
+            
+            {!showUpgradePath && (
+              <p className="text-xs text-text-muted/70">View upgrade recommendations</p>
+            )}
+          </div>
+          
+          {/* Power Consumption Analysis - Tier 3 (Advanced, Collapsible) */}
+          <div className="card p-4 space-y-3 border-border/5 bg-surface-1/10">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-xs text-text-muted">Power Analysis</h3>
+              <button
+                type="button"
+                onClick={() => setShowPowerConsumption((v) => !v)}
+                className="px-3 py-1.5 rounded-md bg-surface-1/20 border border-border/10 text-xs text-text-muted hover:bg-surface-1/30 hover:text-text-primary transition-base"
+                aria-expanded={showPowerConsumption}
+              >
+                {showPowerConsumption ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+            
+            {showPowerConsumption && (
+              <PowerConsumptionVisual />
+            )}
+            
+            {!showPowerConsumption && (
+              <p className="text-xs text-text-muted/70">View power consumption estimates</p>
+            )}
+          </div>
+
+          {/* Debug Panel - Tier 3 (Hidden unless Advanced Mode) */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="card p-4 mb-4 border-2 border-red-500/30">
+              <h3 className="font-medium text-red-400 mb-2">🐛 Debug Panel</h3>
+              <div className="text-xs space-y-2">
+                <div>
+                  <strong>Selected Parts:</strong> {Object.keys(selected).length} parts
+                </div>
+                <div>
+                  <strong>Compatibility Issues:</strong> {compatibilityState.issues.length}
+                </div>
+                <div>
+                  <strong>Compatibility Confirmations:</strong> {compatibilityState.confirmations.length}
+                </div>
+                <div>
+                  <strong>Loading:</strong> {compatibilityState.loading ? 'Yes' : 'No'}
+                </div>
+                {compatibilityState.issues.length > 0 && (
+                  <div className="mt-2 p-2 bg-red-500/10 rounded">
+                    <strong>Issues:</strong>
+                    <ul className="ml-2">
+                      {compatibilityState.issues.map((issue, i) => (
+                        <li key={i} className="text-red-300">
+                          {issue.type}: {issue.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Presets - Tier 2 (Secondary) */}
+          <div className="card p-4 space-y-3 border-border/10 bg-surface-1/15">
+            <h3 className="font-medium text-sm text-text-muted">Quick Presets</h3>
             {/* Budget input fields */}
             <form
-              className="flex items-center gap-2 mb-3"
+              className="flex items-center gap-3 mb-3"
               onSubmit={e => e.preventDefault()}
             >
               <label className="text-xs text-text-muted">Budget:</label>
               <input
                 type="number"
                 min={0}
-                className="w-24 px-3 py-2 rounded-md border border-border/20 bg-surface-1/45 backdrop-blur-glass text-xs shadow-glass/20 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
+                className="w-20 px-2 py-1.5 rounded-md border border-border/15 bg-surface-1/30 text-xs"
                 placeholder="Min"
                 value={budgetMin}
                 onChange={e => setBudgetMin(Number(e.target.value))}
               />
-              <span className="text-xs">-</span>
+              <span className="text-xs text-text-muted">-</span>
               <input
                 type="number"
                 min={0}
-                className="w-24 px-3 py-2 rounded-md border border-border/20 bg-surface-1/45 backdrop-blur-glass text-xs shadow-glass/20 hover:border-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-base"
+                className="w-20 px-2 py-1.5 rounded-md border border-border/15 bg-surface-1/30 text-xs"
                 placeholder="Max"
                 value={budgetMax}
                 onChange={e => setBudgetMax(Number(e.target.value))}
@@ -1738,7 +1960,7 @@ export default function BuilderPage() {
             </form>
             <div className="space-y-2">
               {filteredPresets.length === 0 && (
-                <div className="text-xs text-text-muted">No presets found for this budget.</div>
+                <div className="text-xs text-text-muted/70">No presets found for this budget.</div>
               )}
               {filteredPresets.map((preset) => {
                 // Compute estimated price for preset
@@ -1746,7 +1968,7 @@ export default function BuilderPage() {
                 let missing = false;
                 Object.entries(preset.parts).forEach(([cat, partId]) => {
                   const found = partsByCategory[cat]?.find((p: any) => p.id === partId);
-                  if (found && found.data?.price) estimated += found.data.price;
+                  if (found && found.price) estimated += found.price;
                   else missing = true;
                 });
                 const overBudget = budgetMax > 0 && estimated > budgetMax;
@@ -1755,22 +1977,22 @@ export default function BuilderPage() {
                     key={preset.name}
                     type="button"
                     onClick={() => handleApplyPresetWithChecks(preset)}
-                    className={`w-full text-left px-4 py-3 rounded-lg bg-surface-1/35 backdrop-blur-glass text-sm border shadow-glass/20 hover:bg-surface-2/50 hover:-translate-y-0.5 active:translate-y-0 transition-base ${
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm border transition-all ${
                       overBudget
-                        ? 'border-orange-400/30'
+                        ? 'border-orange-400/20 bg-orange-500/5'
                         : missing
-                          ? 'border-red-400/30'
-                          : 'border-border/20 hover:border-border/30'
+                          ? 'border-red-400/20 bg-red-500/5'
+                          : 'border-border/10 bg-surface-1/20 hover:bg-surface-1/30 hover:border-border/15'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{preset.name}</span>
+                      <span className="font-medium text-sm">{preset.name}</span>
                       <span className="text-xs text-text-muted">${preset.budget.min}-{preset.budget.max}</span>
                     </div>
-                    <p className="text-xs text-text-muted">{PRESET_USE_CASES[preset.name]}</p>
+                    <p className="text-xs text-text-muted/80 mt-1">{PRESET_USE_CASES[preset.name]}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs">Est. Price:</span>
-                      <span className="font-medium text-accent text-xs">${estimated.toFixed(2)}</span>
+                      <span className="text-xs text-text-muted">Est:</span>
+                      <span className="font-medium text-accent text-xs">${estimated.toFixed(0)}</span>
                       {missing && <span className="text-xs text-red-400">Missing parts</span>}
                       {overBudget && !missing && (
                         <span className="text-xs text-orange-400">Over budget</span>
@@ -1809,7 +2031,7 @@ export default function BuilderPage() {
             <div className="flex flex-wrap gap-3 mt-6">
               <button
                 onClick={copySummary}
-                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-base hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-base"
               >
                 Copy
               </button>
@@ -1839,8 +2061,8 @@ export default function BuilderPage() {
         // For now, using the current state as approximation
         const { issues: oldIssues } = compatibilityState;
         const { issues: newIssues } = compatibilityState; // Would need separate evaluation
-        const oldPrice = replacePreview.oldPart?.data?.price || 0;
-        const newPrice = replacePreview.newPart?.data?.price || 0;
+        const oldPrice = replacePreview.oldPart?.price || 0;
+        const newPrice = replacePreview.newPart?.price || 0;
         const priceDiff = newPrice - oldPrice;
         
         return (
@@ -1867,7 +2089,7 @@ export default function BuilderPage() {
 
                 <div className="p-3 rounded-lg bg-surface-1/40 border border-border/20">
                   <div className="text-sm font-medium text-text-primary mb-2">Budget Impact:</div>
-                  <div className={`text-lg font-bold ${priceDiff > 0 ? 'text-red-400' : priceDiff < 0 ? 'text-green-400' : 'text-text-primary'}`}>
+                  <div className={`text-lg font-semibold ${priceDiff > 0 ? 'text-red-400' : priceDiff < 0 ? 'text-green-400' : 'text-text-primary'}`}>
                     {priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)} ({priceDiff > 0 ? 'increase' : priceDiff < 0 ? 'decrease' : 'no change'})
                   </div>
                   <div className="text-xs text-text-muted mt-1">
@@ -1897,13 +2119,13 @@ export default function BuilderPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={confirmReplace}
-                  className="flex-1 px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                  className="flex-1 px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-base"
                 >
                   Confirm Replace
                 </button>
                 <button
                   onClick={cancelReplace}
-                  className="flex-1 px-4 py-2 rounded-lg border border-border/20 bg-surface-1/50 text-text-primary font-medium hover:bg-surface-2/50 transition-all duration-base ease-premium"
+                  className="flex-1 px-4 py-2 rounded-lg border border-border/20 bg-surface-1/50 text-text-primary font-medium hover:bg-surface-2/50 transition-base"
                 >
                   Cancel
                 </button>
@@ -1945,7 +2167,7 @@ export default function BuilderPage() {
           
           // Always include price
           fields.push(
-            { label: 'Price', getValue: (p) => `$${(p.data?.price || 0).toFixed(2)}` }
+            { label: 'Price', getValue: (p) => `$${(p.price || 0).toFixed(2)}` }
           );
           
           return fields;
@@ -1972,20 +2194,20 @@ export default function BuilderPage() {
                 <div className="text-xs font-medium text-text-primary text-center">{part2.name}</div>
                 
                 {getComparisonFields().map((field, idx) => (
-                  <>
-                    <div key={`label-${idx}`} className="text-xs text-text-muted py-2">{field.label}</div>
-                    <div key={`p1-${idx}`} className="text-xs text-text-primary text-center py-2 border-r border-border/10">
+                  <React.Fragment key={idx}>
+                    <div className="text-xs text-text-muted py-2">{field.label}</div>
+                    <div className="text-xs text-text-primary text-center py-2 border-r border-border/10">
                       {field.getValue(part1)}
                     </div>
-                    <div key={`p2-${idx}`} className="text-xs text-text-primary text-center py-2">
+                    <div className="text-xs text-text-primary text-center py-2">
                       {field.getValue(part2)}
                     </div>
-                  </>
+                  </React.Fragment>
                 ))}
               </div>
               
               <div className="mt-4 p-3 rounded-lg bg-surface-1/30 border border-border/20">
-                <div className="text-xs font-medium text-text-primary mb-2">Compare different parts:</div>
+                <div className="text-xs font-medium text-text-muted mb-2">Compare different parts:</div>
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     className="px-2 py-1.5 rounded-md bg-surface-1/50 border border-border/20 text-xs"
@@ -2020,7 +2242,7 @@ export default function BuilderPage() {
                     setPart(category, part1);
                     setComparingParts(null);
                   }}
-                  className="flex-1 px-4 py-2 rounded-lg border border-accent/30 bg-surface-1/50 text-accent font-medium hover:bg-surface-2/50 transition-all duration-base ease-premium"
+                  className="flex-1 px-4 py-2 rounded-lg border border-accent/30 bg-surface-1/50 text-accent font-medium hover:bg-surface-2/50 transition-base"
                 >
                   Select {part1.name.split(' ')[0]}
                 </button>
@@ -2029,7 +2251,7 @@ export default function BuilderPage() {
                     setPart(category, part2);
                     setComparingParts(null);
                   }}
-                  className="flex-1 px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+                  className="flex-1 px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-base"
                 >
                   Select {part2.name.split(' ')[0]}
                 </button>

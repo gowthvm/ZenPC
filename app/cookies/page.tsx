@@ -123,7 +123,7 @@ export default function CookiesPage() {
               <li>Retargeting or remarketing cookies</li>
             </ul>
             <p className="text-text-muted leading-relaxed mt-4">
-              We believe in privacy by design, which means we don't collect data we don't need and we don't use cookies for purposes beyond providing our core service.
+              We believe in privacy by design, which means we don&apos;t collect data we don&apos;t need and we don&apos;t use cookies for purposes beyond providing our core service.
             </p>
           </section>
 
