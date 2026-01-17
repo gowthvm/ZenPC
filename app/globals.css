@@ -83,6 +83,31 @@
     line-height: 1.6;
   }
 
+  /* Custom scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--surface-2) / 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--surface-3) / 0.5);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--surface-3) / 0.7);
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--surface-3) / 0.5) rgb(var(--surface-2) / 0.3);
+  }
+
   a,
   button,
   [role='button'],
@@ -116,15 +141,152 @@
 }
 
 @layer components {
+  /* Premium Glass Cards */
   .card {
-    @apply rounded-xl border border-border/10 bg-surface-1/55 backdrop-blur-glass transition-all duration-base ease-premium;
+    @apply rounded-lg border border-border/10 bg-surface-1/40 backdrop-blur-xl transition-all duration-base ease-premium;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.02) inset;
   }
   .card:hover {
-    @apply border-accent/20;
-    box-shadow: 0 6px 32px 0 rgb(99 112 241 / 0.08), 0 1.5px 0 rgb(255 255 255 / 0.04) inset;
+    @apply border-accent/15 bg-surface-1/50;
+    box-shadow: 0 8px 24px rgb(99 112 241 / 0.1), 0 2px 0 rgb(255 255 255 / 0.05) inset;
   }
+
+  /* Section Containers */
+  .section-container {
+    @apply space-y-6;
+  }
+
+  .section-header {
+    @apply space-y-2 mb-8;
+  }
+
+  .section-title {
+    @apply font-display text-2xl font-bold text-text-primary;
+  }
+
+  .section-subtitle {
+    @apply text-base text-text-muted;
+  }
+
+  /* Panel Containers */
+  .panel {
+    @apply card p-6 md:p-8;
+  }
+
+  .panel-header {
+    @apply space-y-4 pb-6 border-b border-border/10;
+  }
+
+  .panel-title {
+    @apply font-display text-xl font-semibold text-text-primary;
+  }
+
+  .panel-subtitle {
+    @apply text-sm text-text-muted;
+  }
+
+  /* Content Grid */
+  .content-grid {
+    @apply grid gap-6;
+  }
+
+  .content-grid-2 {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+  }
+
+  .content-grid-3 {
+    @apply grid grid-cols-1 md:grid-cols-3 gap-6;
+  }
+
+  /* Buttons */
   .btn {
-    @apply transition-transform duration-base ease-premium active:scale-95 focus-visible:ring-2 focus-visible:ring-ring;
+    @apply transition-all duration-base ease-premium active:scale-95 focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .btn-primary {
+    @apply px-6 py-2.5 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-base ease-premium hover:shadow-lg hover:shadow-accent/20 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-2.5 rounded-lg border border-border/20 bg-surface-1/40 text-text-primary font-medium hover:bg-surface-1/60 hover:border-border/40 transition-all duration-base ease-premium active:scale-95;
+  }
+
+  .btn-outline {
+    @apply px-6 py-2.5 rounded-lg border border-border/30 text-text-primary font-medium hover:border-border/60 hover:bg-surface-1/30 transition-all duration-base ease-premium active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply px-3 py-2 text-text-muted font-medium hover:text-text-primary hover:bg-surface-1/40 transition-all duration-base ease-premium rounded-lg;
+  }
+
+  /* Form Elements */
+  .form-input {
+    @apply w-full px-4 py-2.5 bg-surface-1/50 backdrop-blur-glass border border-border/20 rounded-lg text-text-primary placeholder-text-muted/50 transition-all duration-base ease-premium focus:ring-2 focus:ring-accent/40 focus:border-accent/40 focus:bg-surface-1/60 outline-none;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-text-primary mb-2;
+  }
+
+  /* Status Badge */
+  .badge-success {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/30;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/30;
+  }
+
+  .badge-error {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/30;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent border border-accent/30;
+  }
+
+  /* Navigation Items */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-base ease-premium cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply bg-surface-1/60 text-accent shadow-glass border border-accent/20;
+  }
+
+  .nav-item-inactive {
+    @apply text-text-muted hover:bg-surface-1/40 hover:text-text-primary border border-transparent hover:border-border/20;
+  }
+
+  /* Empty States */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-12 px-4 text-center;
+  }
+
+  .empty-state-icon {
+    @apply h-16 w-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center;
+  }
+
+  .empty-state-title {
+    @apply font-display text-lg font-semibold text-text-primary mb-2;
+  }
+
+  .empty-state-text {
+    @apply text-sm text-text-muted mb-6;
+  }
+
+  /* Professional Divider */
+  .divider {
+    @apply border-t border-border/10;
+  }
+
+  .divider-soft {
+    @apply border-t border-border/5;
+  }
+
+  /* Loading Skeleton */
+  .skeleton {
+    @apply animate-pulse bg-surface-2/50 rounded-lg;
   }
 }
 
@@ -135,6 +297,54 @@
   }
   .focus-ring {
     @apply focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  /* Page Transitions */
+  .animate-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  .fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  .slide-in-from-top {
+    animation: slide-in-from-top 0.3s ease-out;
+  }
+
+  .slide-in-from-bottom {
+    animation: slide-in-from-bottom 0.3s ease-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-in-from-top {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-from-bottom {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 

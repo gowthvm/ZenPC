@@ -115,63 +115,57 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <div 
-        className={`fixed inset-y-0 left-0 z-50 w-64 transform bg-surface-2/80 backdrop-blur-glass border-r border-border/10 transition-transform duration-300 ease-premium md:relative md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 transform bg-surface-2/70 backdrop-blur-xl border-r border-border/10 transition-all duration-300 ease-premium md:relative md:translate-x-0 flex flex-col ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="p-6 border-b border-border/10">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center font-display text-sm font-bold text-white select-none shadow-lg">
-                Z
-              </div>
-              <span className="font-display text-xl font-semibold">ZenPC</span>
-            </Link>
-          </div>
+        {/* Logo Section */}
+        <div className="p-6 border-b border-border/10">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center font-display text-sm font-bold text-white select-none shadow-lg group-hover:shadow-xl transition-all duration-base ease-premium">
+              Z
+            </div>
+            <span className="font-display text-lg font-semibold group-hover:text-accent transition-colors duration-base">ZenPC</span>
+          </Link>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-base ease-premium ${
-                    isActive
-                      ? 'bg-surface-1/60 text-accent shadow-glass border border-accent/20'
-                      : 'text-text-muted hover:bg-surface-1/40 hover:text-text-primary hover:border border-transparent hover:border-border/20'
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-item ${isActive ? 'nav-item-active' : 'nav-item-inactive'}`}
+              >
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
-          {/* User info and sign out */}
-          {!loading && user && (
-            <div className="p-4 border-t border-border/10">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-surface-1/50 backdrop-blur-glass border border-border/10">
-                <div className="truncate">
-                  <p className="text-sm font-medium truncate">{user.email}</p>
-                  <p className="text-xs text-text-muted">Free Plan</p>
+        {/* User Info Card */}
+        {!loading && user && (
+          <div className="p-4 border-t border-border/10 bg-gradient-to-b from-transparent to-surface-1/30">
+            <div className="card p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary truncate">{user.email}</p>
+                  <p className="text-xs text-text-muted mt-1">Signed In</p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
                   onClick={handleSignOut}
-                  className="text-text-muted hover:text-text-primary hover:bg-surface-2/50 transition-all duration-base ease-premium"
+                  className="btn-ghost p-2 text-text-muted hover:text-red-400 transition-colors duration-base"
                   title="Sign out"
                 >
                   <LogOut className="h-4 w-4" />
-                </Button>
+                </button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Main content */}

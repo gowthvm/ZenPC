@@ -132,7 +132,7 @@ export default function Page() {
               <div className="w-20 h-8 bg-surface-2/50 rounded-full animate-pulse"></div>
             ) : user ? (
               <>
-                <Link href="/app/account" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200 truncate max-w-32">
+                <Link href="/builder" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200 truncate max-w-32">
                   {user.email}
                 </Link>
                 <Button
@@ -169,13 +169,13 @@ export default function Page() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
               <Link 
-                href="/app" 
+                href="/builder" 
                 className="px-8 py-3.5 bg-accent hover:bg-accent/90 text-white font-medium rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
               >
                 Start Building
               </Link>
               <Link 
-                href="/guide" 
+                href="/builder?tab=guide" 
                 className="px-8 py-3.5 border border-border/20 text-text-primary font-medium rounded-lg transition-all duration-300 hover:bg-surface-2/50"
               >
                 View Guide
@@ -326,11 +326,11 @@ export default function Page() {
               Join thousands of PC builders who trust ZenPC for their custom builds.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/app" className="px-8 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
+              <Link href="/builder" className="px-8 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
                 Start Building
               </Link>
-              <Link href="/guide" className="px-8 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30">
-                View Demo
+              <Link href="/builder?tab=guide" className="px-8 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30">
+                View Guide
               </Link>
             </div>
           </div>
@@ -372,7 +372,7 @@ export default function Page() {
                 title: 'Product',
                 links: [
                   { name: 'PC Builder', href: '/builder' },
-                  { name: 'Build Guide', href: '/guide' },
+                  { name: 'Build Guide', href: '/builder?tab=guide' },
                   { name: 'Community', href: '/community' },
                   { name: 'Pricing', href: '/pricing' },
                   { name: 'Updates', href: '/updates' }

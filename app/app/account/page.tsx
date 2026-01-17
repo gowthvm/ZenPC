@@ -86,96 +86,96 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="w-full py-10 px-4 md:px-0 max-w-4xl mx-auto">
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar */}
-        <div className="w-full md:w-64 flex-shrink-0">
-          <div className="card p-6 mb-6 group hover:scale-[1.02] transition-all duration-base ease-premium">
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-20 h-20 rounded-full bg-surface-3/50 flex items-center justify-center mb-4 overflow-hidden">
+    <div className="w-full animate-in fade-in duration-500">
+      {/* Page Header */}
+      <div className="section-header mb-8">
+        <h1 className="section-title">Account Settings</h1>
+        <p className="section-subtitle">Manage your profile, security, and builds</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
+        {/* Sidebar Navigation */}
+        <div className="md:col-span-1">
+          <div className="card p-6 sticky top-24">
+            {/* Profile Card */}
+            <div className="flex flex-col items-center text-center mb-6 pb-6 border-b border-border/10">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center mb-4 border border-accent/20 shadow-lg">
                 {profile.avatar_url ? (
                   <Image 
                     src={profile.avatar_url} 
                     alt={profile.full_name || 'User'} 
-                    width={80}
-                    height={80}
-                    className="w-full h-full object-cover"
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-cover rounded-full"
                   />
                 ) : (
-                  <span className="text-2xl font-bold text-text-muted">
+                  <span className="text-2xl font-bold text-accent">
                     {profile.email?.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
-              <h2 className="text-xl font-bold">{profile.full_name || 'User'}</h2>
-              <p className="text-sm text-text-muted">{profile.email}</p>
+              <h3 className="font-semibold text-text-primary">{profile.full_name || 'User'}</h3>
+              <p className="text-xs text-text-muted mt-1 truncate max-w-full">{profile.email}</p>
             </div>
-            
-            <div className="space-y-1">
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-all duration-base ease-premium ${
-                  activeTab === 'profile' 
-                    ? 'bg-surface-1/60 text-accent shadow-glass border border-accent/20' 
-                    : 'text-text-muted hover:bg-surface-1/40 hover:text-text-primary border border-transparent hover:border-border/20'
-                }`}
-              >
-                Profile Settings
-              </button>
-              <button
-                onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-all duration-base ease-premium ${
-                  activeTab === 'security' 
-                    ? 'bg-surface-1/60 text-accent shadow-glass border border-accent/20' 
-                    : 'text-text-muted hover:bg-surface-1/40 hover:text-text-primary border border-transparent hover:border-border/20'
-                }`}
-              >
-                Security
-              </button>
-              <button
-                onClick={() => setActiveTab('saved')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-all duration-base ease-premium ${
-                  activeTab === 'saved' 
-                    ? 'bg-surface-1/60 text-accent shadow-glass border border-accent/20' 
-                    : 'text-text-muted hover:bg-surface-1/40 hover:text-text-primary border border-transparent hover:border-border/20'
-                }`}
-              >
-                Saved Builds
-              </button>
-            </div>
+
+            {/* Tab Navigation */}
+            <nav className="space-y-2 mb-6">
+              {[
+                { id: 'profile', label: 'Profile', icon: '👤' },
+                { id: 'security', label: 'Security', icon: '🔒' },
+                { id: 'saved', label: 'Saved Builds', icon: '💾' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full text-left nav-item ${activeTab === tab.id ? 'nav-item-active' : 'nav-item-inactive'}`}
+                >
+                  <span className="text-lg">{tab.icon}</span>
+                  <span className="flex-1">{tab.label}</span>
+                  {activeTab === tab.id && (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </nav>
+
+            {/* Sign Out Button */}
+            <button 
+              onClick={handleSignOut}
+              className="w-full btn-outline text-red-400 border-red-500/20 hover:border-red-500/40 hover:bg-red-500/5"
+            >
+              Sign Out
+            </button>
           </div>
-          
-          <Button 
-            onClick={handleSignOut}
-            variant="outline" 
-            className="w-full"
-          >
-            Sign Out
-          </Button>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1">
+        <div className="md:col-span-3">
           {activeTab === 'profile' && (
-            <div className="card p-6 group hover:scale-[1.01] transition-all duration-base ease-premium">
-              <h2 className="text-xl font-bold mb-6">Profile Settings</h2>
+            <div className="panel">
+              <div className="panel-header mb-6">
+                <h2 className="panel-title">Profile Settings</h2>
+                <p className="panel-subtitle">Update your personal information</p>
+              </div>
               
               <form className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2" htmlFor="fullName">
+                  <label className="form-label" htmlFor="fullName">
                     Full Name
                   </label>
                   <input
                     id="fullName"
                     type="text"
                     defaultValue={profile.full_name || ''}
-                    className="w-full px-4 py-2 bg-surface-1/60 backdrop-blur-glass border border-border/20 rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-all duration-base ease-premium"
+                    className="form-input"
                     placeholder="Enter your full name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2" htmlFor="email">
+                  <label className="form-label" htmlFor="email">
                     Email Address
                   </label>
                   <input
@@ -183,59 +183,79 @@ export default function AccountPage() {
                     type="email"
                     disabled
                     value={profile.email}
-                    className="w-full px-4 py-2 bg-surface-2/40 backdrop-blur-glass text-text-muted rounded-lg border border-border/20 cursor-not-allowed"
+                    className="form-input opacity-60 cursor-not-allowed"
                   />
-                  <p className="mt-1 text-xs text-text-muted">
-                    Contact support to change your email address
+                  <p className="mt-2 text-xs text-text-muted flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+                    </svg>
+                    Contact support to change your email
                   </p>
                 </div>
 
-                <div className="pt-2">
-                  <Button type="submit" variant="default" className="transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
-                    Update Profile
-                  </Button>
+                <div className="pt-4 border-t border-border/10">
+                  <button type="submit" className="btn-primary">
+                    Save Changes
+                  </button>
                 </div>
               </form>
             </div>
           )}
 
           {activeTab === 'security' && (
-            <div className="card p-6 group hover:scale-[1.01] transition-all duration-base ease-premium">
-              <h2 className="text-xl font-bold mb-6">Security</h2>
-              <div className="space-y-4">
-                <p className="text-sm text-text-muted">
-                  Account security settings (password and two-factor authentication) will be managed from ZenPC soon.
-                </p>
+            <div className="panel">
+              <div className="panel-header mb-6">
+                <h2 className="panel-title">Security</h2>
+                <p className="panel-subtitle">Keep your account safe and secure</p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-4 bg-accent/10 border border-accent/20 rounded-lg">
+                  <p className="text-sm text-accent font-medium">
+                    ℹ️ Security features coming soon
+                  </p>
+                  <p className="text-xs text-text-muted mt-2">
+                    Password and two-factor authentication settings will be available soon.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-text-primary mb-3">Account Activity</h3>
+                  <div className="space-y-2 text-sm text-text-muted">
+                    <div className="flex justify-between p-3 bg-surface-1/40 rounded-lg border border-border/10">
+                      <span>Account Created</span>
+                      <span className="text-text-primary font-medium">
+                        {new Date(profile.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'saved' && (
-            <div className="card p-6 group hover:scale-[1.01] transition-all duration-base ease-premium">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Saved Builds</h2>
-                <Link href="/app/builder">
-                  <Button variant="outline" className="transition-all duration-base ease-premium hover:scale-105 active:scale-95">
-                    New Build
-                  </Button>
+            <div className="panel">
+              <div className="panel-header mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="panel-title">Saved Builds</h2>
+                  <p className="panel-subtitle">All your PC builds</p>
+                </div>
+                <Link href="/app/builder" className="btn-primary text-sm py-2">
+                  New Build
                 </Link>
               </div>
-              
-              <div className="text-center py-12">
-                <div className="text-text-muted mb-4">
-                  <div className="w-16 h-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center shadow-glass">
-                    <svg className="w-8 h-8 text-accent opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
+
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <svg className="w-10 h-10 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
                 </div>
-                <p className="text-text-muted mb-4">
-                  You don&apos;t have any saved builds yet.
-                </p>
-                <Link href="/app/builder">
-                  <Button variant="default" className="transition-all duration-base ease-premium hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
-                    Create Your First Build
-                  </Button>
+                <h3 className="empty-state-title">No Saved Builds</h3>
+                <p className="empty-state-text">You don't have any saved builds yet. Start building your first PC.</p>
+                <Link href="/app/builder" className="btn-primary">
+                  Create Your First Build
                 </Link>
               </div>
             </div>
