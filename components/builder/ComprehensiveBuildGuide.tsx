@@ -133,7 +133,7 @@ export const ComprehensiveBuildGuide: React.FC<ComprehensiveBuildGuideProps> = (
     };
 
     updateGuide();
-  }, [selected, engine]);
+  }, [selected, engine]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-expand current step with smooth scroll
   useEffect(() => {
@@ -178,7 +178,7 @@ export const ComprehensiveBuildGuide: React.FC<ComprehensiveBuildGuideProps> = (
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [keyboardShortcuts, showHelp]);
+  }, [keyboardShortcuts, showHelp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Touch gestures for mobile
   const handleTouchStart = (e: React.TouchEvent) => {

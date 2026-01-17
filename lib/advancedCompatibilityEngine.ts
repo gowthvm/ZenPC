@@ -430,91 +430,7 @@ EXACTLY WHAT'S WRONG:
     gpu: any,
     psu: any
   ): ExtendedCompatibilityIssue | null {
-    const gpuConnectors = getSpecValue(gpu, 'power_connectors');
-    if (!gpuConnectors) return null; // GPU may not require external power
-
-    // Parse GPU connector requirement (e.g., "8-pin + 8-pin" or "12VHPWR")
-    const connectorText = String(gpuConnectors).toLowerCase();
-
-    let has12VHPWR = false;
-    let needs8pin = 0;
-    let needs6pin = 0;
-
-    if (connectorText.includes('12vhpwr')) {
-      has12VHPWR = true;
-    } else {
-      // Count 8-pin and 6-pin requirements
-      const matches8 = connectorText.match(/8[- ]?pin/gi);
-      const matches6 = connectorText.match(/6[- ]?pin/gi);
-      needs8pin = matches8 ? matches8.length : 0;
-      needs6pin = matches6 ? matches6.length : 0;
-    }
-
-    // Check PSU connectors
-    const psu8pins = getSpecValue(psu, 'pcie_8pin_count') || 0;
-    const psu6pins = getSpecValue(psu, 'pcie_6pin_count') || 0;
-    const psuHas12VHPWR = getSpecValue(psu, 'pcie_12vhpwr');
-
-    if (has12VHPWR && !psuHas12VHPWR) {
-      const gpuName = getSpecValue(gpu, 'name') || 'Your GPU';
-      const psuName = getSpecValue(psu, 'name') || 'Your PSU';
-
-      return {
-        type: 'Missing 12VHPWR Connector',
-        severity: 'error',
-        message: `❌ Missing Connector: ${gpuName} requires 12VHPWR but ${psuName} doesn't have it`,
-        explanation: `INCOMPATIBLE: "${gpuName}" requires the new 12VHPWR connector (used by RTX 40-series, RTX 4090, etc.), but "${psuName}" does not provide this connector. This is a new power standard that older PSUs don't support.
-
-EXACTLY WHAT'S WRONG:
-• Your GPU: ${gpuName} (requires: 12VHPWR connector)
-• Your PSU: ${psuName} (has: traditional PCIe connectors only)
-• Problem: There is no physical connector on your PSU to supply power to this GPU.`,
-        fix: `Option 1: Replace the PSU with a modern model that includes a 12VHPWR connector (RTX 40-series compatible PSU)\n\nOption 2: Replace the GPU with a model that uses traditional PCIe connectors (8-pin, 6-pin) instead of 12VHPWR`,
-        affected: ['gpu', 'psu'],
-        category: 'hard',
-        parts_involved: ['gpu', 'psu'],
-        spec_keys: ['power_connectors', 'pcie_12vhpwr'],
-        severity_explanation: 'BLOCKING ERROR: The GPU cannot receive power without the 12VHPWR connector. Your GPU will not work.',
-        recommendation: `12VHPWR is a new power standard for high-end RTX 40-series GPUs. Make sure your PSU is RTX 40-series compatible if you're using these modern GPUs.`
-      };
-    }
-
-    if (psu8pins < needs8pin || psu6pins < needs6pin) {
-      const gpuName = getSpecValue(gpu, 'name') || 'Your GPU';
-      const psuName = getSpecValue(psu, 'name') || 'Your PSU';
-      const missingHigh8 = Math.max(0, needs8pin - psu8pins);
-      const missingHigh6 = Math.max(0, needs6pin - psu6pins);
-
-      const missingConnectors = [];
-      if (missingHigh8 > 0) missingConnectors.push(`${missingHigh8}× 8-pin`);
-      if (missingHigh6 > 0) missingConnectors.push(`${missingHigh6}× 6-pin`);
-      const missingText = missingConnectors.join(' and ');
-
-      const fixOptions = [
-        `Option 1: Choose a more powerful PSU with at least ${needs8pin}× 8-pin and ${needs6pin}× 6-pin connectors`,
-        `Option 2: Choose a lower-power GPU that requires fewer connectors`
-      ];
-
-      return {
-        type: 'Insufficient Power Connectors',
-        severity: 'error',
-        message: `❌ Missing Power Connectors: ${gpuName} needs ${missingText} that ${psuName} doesn't provide`,
-        explanation: `INCOMPATIBLE: "${gpuName}" requires ${gpuConnectors}, but "${psuName}" does not have enough power connectors. Using adapters on high-end GPUs can cause power delivery issues, system crashes, or even fire hazards.
-
-EXACTLY WHAT'S WRONG:
-• Your GPU: ${gpuName} (requires: ${needs8pin}× 8-pin and ${needs6pin}× 6-pin connectors)
-• Your PSU: ${psuName} (provides: ${psu8pins}× 8-pin and ${psu6pins}× 6-pin)
-• Missing: ${missingText}`,
-        fix: fixOptions.join('\n\n'),
-        affected: ['gpu', 'psu'],
-        category: 'hard',
-        parts_involved: ['gpu', 'psu'],
-        spec_keys: ['power_connectors', 'pcie_8pin_count', 'pcie_6pin_count'],
-        severity_explanation: 'BLOCKING ERROR: The GPU cannot receive adequate power. Using adapters is dangerous and not recommended.',
-        recommendation: `High-end GPUs (RTX 4080+, RTX 3080+) require robust power delivery. Use a PSU that natively supports all required connectors.`
-      };
-    }
-
+    // PSU connector compatibility check removed - no errors when connectors are missing
     return null;
   }
 
@@ -525,25 +441,7 @@ EXACTLY WHAT'S WRONG:
     motherboard: any,
     psu: any
   ): ExtendedCompatibilityIssue | null {
-    const mbHas24pin = getSpecValue(motherboard, 'power_connectors') !== false;
-    const psuHas24pin = getSpecValue(psu, 'motherboard_power_pins');
-
-    // Most boards need 24-pin; if PSU doesn't provide it, that's a problem
-    if (mbHas24pin && !psuHas24pin) {
-      return {
-        type: 'Missing Motherboard 24-pin Connector',
-        severity: 'error',
-        message: 'PSU does not provide 24-pin motherboard power connector',
-        explanation: 'The motherboard requires standard 24-pin power, but your PSU does not provide it.',
-        fix: 'Select a standard ATX PSU with 24-pin motherboard power support.',
-        affected: ['motherboard', 'psu'],
-        category: 'hard',
-        parts_involved: ['motherboard', 'psu'],
-        spec_keys: ['power_connectors', 'motherboard_power_pins'],
-        severity_explanation: 'Motherboard cannot power on without 24-pin connector.'
-      };
-    }
-
+    // PSU connector compatibility check removed - no errors when connectors are missing
     return null;
   }
 
@@ -554,35 +452,7 @@ EXACTLY WHAT'S WRONG:
     cpu: any,
     psu: any
   ): ExtendedCompatibilityIssue | null {
-    const cpuPower = getSpecValue(cpu, 'tdp_watts') || 65;
-
-    // Heuristic: CPUs above 125W typically need 8-pin; below 65W need 4-pin
-    let cpu4pinNeeded = cpuPower <= 65 ? 1 : 0;
-    let cpu8pinNeeded = cpuPower > 125 ? 1 : 0;
-
-    if (cpuPower > 65 && cpuPower <= 125) {
-      cpu8pinNeeded = 1; // Most modern CPUs use 8-pin
-    }
-
-    const psu4pins = getSpecValue(psu, 'cpu_power_4pin') || 0;
-    const psu8pins = getSpecValue(psu, 'cpu_power_8pin') || 0;
-
-    if ((cpu4pinNeeded && psu4pins === 0 && psu8pins === 0) ||
-        (cpu8pinNeeded && psu8pins === 0)) {
-      return {
-        type: 'Insufficient CPU Power Connectors',
-        severity: 'error',
-        message: `PSU lacks required CPU power connectors for this ${cpuPower}W TDP CPU`,
-        explanation: `This CPU likely requires 8-pin CPU power, but your PSU does not provide it.`,
-        fix: `Select a PSU with at least one 8-pin (or 4+4-pin) CPU power connector.`,
-        affected: ['cpu', 'psu'],
-        category: 'hard',
-        parts_involved: ['cpu', 'psu'],
-        spec_keys: ['tdp_watts', 'cpu_power_8pin', 'cpu_power_4pin'],
-        severity_explanation: 'CPU cannot be powered without the required connector.'
-      };
-    }
-
+    // PSU connector compatibility check removed - no errors when connectors are missing
     return null;
   }
 }

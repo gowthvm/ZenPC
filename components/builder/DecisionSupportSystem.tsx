@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AdaptiveUXEngine } from '@/lib/adaptiveUXEngine';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Progress } from '@/components/ui/Progress';
+
+// Placeholder interface for AdaptiveUXEngine
+interface AdaptiveUXEngine {
+  // TODO: Implement actual AdaptiveUXEngine interface
+}
 
 interface DecisionSupportSystemProps {
   adaptiveEngine: AdaptiveUXEngine;

@@ -6,49 +6,49 @@ import { Badge } from '@/components/ui/Badge';
 
 // Interactive tutorial component
 export const InteractiveTutorial = ({ 
-  onComplete, 
-  onSkip 
+  onCompleteAction, 
+  onSkipAction 
 }: {
-  onComplete: () => void;
-  onSkip: () => void;
+  onCompleteAction: () => void;
+  onSkipAction: () => void;
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   
   const tutorialSteps = [
     {
-      title: "Welcome to PC Build Guide! 🚀",
+      title: "Welcome to PC Build Guide! ",
       content: "This intelligent guide will walk you through every step of building your perfect PC.",
-      icon: "🎯",
+      icon: "",
       highlight: "header"
     },
     {
       title: "Progressive Disclosure",
       content: "We show you only what you need, when you need it. No information overload!",
-      icon: "📊",
+      icon: "",
       highlight: "progress"
     },
     {
       title: "Smart Recommendations",
       content: "Get personalized suggestions based on your use case and budget.",
-      icon: "💡",
+      icon: "",
       highlight: "recommendations"
     },
     {
       title: "Real-time Progress Tracking",
       content: "Watch your build come together with visual progress indicators and achievements.",
-      icon: "📈",
+      icon: "",
       highlight: "progress"
     },
     {
       title: "Keyboard Shortcuts",
       content: "Power user? Use Ctrl+N (next), Ctrl+P (previous), Ctrl+S (save) for quick navigation.",
-      icon: "⌨️",
+      icon: "",
       highlight: "shortcuts"
     },
     {
       title: "Mobile Friendly",
       content: "Build on any device! Swipe gestures and touch-optimized controls make mobile building easy.",
-      icon: "📱",
+      icon: "",
       highlight: "mobile"
     }
   ];
@@ -57,7 +57,7 @@ export const InteractiveTutorial = ({
     if (currentStep < tutorialSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      onComplete();
+      onCompleteAction();
     }
   };
 
@@ -114,7 +114,7 @@ export const InteractiveTutorial = ({
           {/* Skip option */}
           <div className="text-center mt-4">
             <button
-              onClick={onSkip}
+              onClick={onSkipAction}
               className="text-sm text-text-muted hover:text-text-primary transition-colors"
             >
               Skip tutorial
@@ -166,10 +166,10 @@ export const ContextualHelp = ({
 // Help modal
 export const HelpModal = ({ 
   isOpen, 
-  onClose 
+  onCloseAction
 }: {
   isOpen: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
 }) => {
   if (!isOpen) return null;
 
@@ -180,7 +180,7 @@ export const HelpModal = ({
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-text-primary">Help & Shortcuts</h2>
             <button
-              onClick={onClose}
+              onClick={onCloseAction}
               className="w-8 h-8 rounded-lg bg-surface-1/50 flex items-center justify-center hover:bg-surface-1 transition-colors"
             >
               ✕
@@ -252,7 +252,7 @@ export const HelpModal = ({
                   • Your progress is automatically saved as you work
                 </div>
                 <div className="p-3 rounded bg-surface-1/30">
-                  • Look for the "Apply Fix" buttons to quickly resolve common issues
+                  • Look for the &quot;Apply Fix&quot; buttons to quickly resolve common issues
                 </div>
                 <div className="p-3 rounded bg-surface-1/30">
                   • Switch between Overview, Detailed, Timeline, and Summary views for different perspectives

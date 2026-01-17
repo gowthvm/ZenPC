@@ -253,7 +253,7 @@ export default function AccountPage() {
                   </svg>
                 </div>
                 <h3 className="empty-state-title">No Saved Builds</h3>
-                <p className="empty-state-text">You don't have any saved builds yet. Start building your first PC.</p>
+                <p className="empty-state-text">You don&apos;t have any saved builds yet. Start building your first PC.</p>
                 <Link href="/app/builder" className="btn-primary">
                   Create Your First Build
                 </Link>

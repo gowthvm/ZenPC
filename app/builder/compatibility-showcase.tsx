@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import CompatibilityIssueDisplay from '@/components/builder/CompatibilityIssueDisplay';
-import type { CompatibilityIssue } from '@/lib/compatibilityEngine';
+import type { ExtendedCompatibilityIssue } from '@/lib/advancedCompatibilityEngine';
 
 export default function CompatibilityUIShowcase() {
   const [selectedScenario, setSelectedScenario] = useState<string>('socket');
 
   // Mock compatibility issues showcasing all enhanced error messages
-  const scenarios: Record<string, { title: string; issues: CompatibilityIssue[] }> = {
+  const scenarios: Record<string, { title: string; issues: ExtendedCompatibilityIssue[] }> = {
     socket: {
       title: 'CPU Socket Mismatch',
       issues: [
