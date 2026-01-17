@@ -85,6 +85,26 @@ export const CompatibilityIssueDisplay: React.FC<CompatibilityIssueDisplayProps>
       info: 'bg-blue-100 text-blue-800',
     }[issue.severity];
 
+    // Parse explanation to extract incompatible details
+    const parseIncompatibilityDetails = (explanation: string) => {
+      // Try to extract "X does not match Y" or "X conflicts with Y" patterns
+      const patterns = [
+        /(?:does not match|conflicts with|incompatible with|requires|must be)\s+(.+?)(?:\.|,|$)/gi,
+        /([A-Za-z0-9\s]+)\s+(?:is|has)\s+(.+?)(?:\.|,|$)/gi,
+      ];
+      
+      const details: string[] = [];
+      patterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(explanation)) !== null) {
+          details.push(match[0].trim());
+        }
+      });
+      return details;
+    };
+
+    const incompatibilityDetails = parseIncompatibilityDetails(issue.explanation);
+
     return (
       <div
         key={index}
@@ -98,34 +118,138 @@ export const CompatibilityIssueDisplay: React.FC<CompatibilityIssueDisplayProps>
               {issue.severity === 'info' && <Info size={20} />}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-sm text-gray-900 line-clamp-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="font-semibold text-sm text-gray-900">
                   {issue.message}
                 </h4>
                 <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${badgeBg}`}>
                   {issue.severity.charAt(0).toUpperCase() + issue.severity.slice(1)}
                 </span>
               </div>
-              <p className="text-sm text-gray-700 line-clamp-2">
+              
+              {/* Main explanation */}
+              <p className="text-sm text-gray-700 mb-2">
                 {issue.explanation}
               </p>
-              {isExpanded && (
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  {issue.fix && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold text-gray-600 mb-1">How to fix:</p>
-                      <p className="text-sm text-gray-700">{issue.fix}</p>
+
+              {/* Extract sections from explanation for errors */}
+              {issue.severity === 'error' && (
+                <div className="mt-3 space-y-3">
+                  {/* Affected components with clear labeling */}
+                  {issue.affected && issue.affected.length > 0 && (
+                    <div className="p-2 bg-red-100/30 rounded border border-red-200/50">
+                      <p className="text-xs font-semibold text-red-700 mb-1">
+                        🔴 Involved Components:
+                      </p>
+                      <div className="space-y-1">
+                        {issue.affected.map((item, i) => (
+                          <div key={i} className="text-xs text-gray-700 flex items-start gap-2">
+                            <span className="text-gray-400 mt-1">•</span>
+                            <span>{item}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
+
+                  {/* Extract "EXACTLY WHAT'S WRONG" section */}
+                  {issue.explanation && issue.explanation.includes('EXACTLY WHAT' + '\'S WRONG') && (
+                    <div className="p-2 bg-yellow-100/30 rounded border border-yellow-200/50">
+                      <p className="text-xs font-semibold text-yellow-700 mb-1">
+                        ⚠️ What&apos;s Incompatible:
+                      </p>
+                      <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap break-words">
+                        {issue.explanation.split('EXACTLY WHAT' + '\'S WRONG:')[1]?.split('\n\n')[0] || ''}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Fix/Solution */}
+                  {issue.fix && (
+                    <div className="p-2 bg-green-100/30 rounded border border-green-200/50">
+                      <p className="text-xs font-semibold text-green-700 mb-2">
+                        ✓ What You Must Do:
+                      </p>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                        {issue.fix}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Recommendation if available */}
+                  {(issue as any).recommendation && (
+                    <div className="p-2 bg-blue-100/30 rounded border border-blue-200/50">
+                      <p className="text-xs font-semibold text-blue-700 mb-1">
+                        💡 Recommendation:
+                      </p>
+                      <p className="text-sm text-gray-800">
+                        {(issue as any).recommendation}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* For warnings/info, show expandable details */}
+              {issue.severity !== 'error' && isExpanded && (
+                <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+                  {/* Affected components */}
                   {issue.affected && issue.affected.length > 0 && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold text-gray-600 mb-1">Affected components:</p>
-                      <div className="flex flex-wrap gap-1">
+                    <div className="p-2 bg-gray-100/50 rounded">
+                      <p className="text-xs font-semibold text-gray-700 mb-1">
+                        Components Involved:
+                      </p>
+                      <div className="space-y-1">
                         {issue.affected.map((item, i) => (
-                          <span key={i} className="inline-block text-xs bg-gray-200 px-2 py-1 rounded">
-                            {item}
-                          </span>
+                          <div key={i} className="text-xs text-gray-700 flex items-start gap-2">
+                            <span className="text-gray-400 mt-1">•</span>
+                            <span>{item}</span>
+                          </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Incompatibility Details */}
+                  {incompatibilityDetails.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 mb-2">
+                        Details:
+                      </p>
+                      <div className="space-y-1 p-2 bg-gray-100/30 rounded">
+                        {incompatibilityDetails.map((detail, i) => (
+                          <p key={i} className="text-xs text-gray-700">
+                            • {detail}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fix/Solution */}
+                  {issue.fix && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 mb-2">
+                        Solution:
+                      </p>
+                      <div className="p-2 bg-gray-100/30 rounded">
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                          {issue.fix}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommendation */}
+                  {(issue as any).recommendation && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 mb-2">
+                        Recommendation:
+                      </p>
+                      <div className="p-2 bg-gray-100/30 rounded">
+                        <p className="text-sm text-gray-800">
+                          {(issue as any).recommendation}
+                        </p>
                       </div>
                     </div>
                   )}

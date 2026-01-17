@@ -246,12 +246,19 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
       {/* Right Column - Build Summary & Save */}
       <div className="lg:col-span-1">
         <div className="space-y-4 sticky top-0">
-          {/* Compatibility Status */}
+          {/* Compatibility Status - Full Details for Errors */}
           {compatibilityIssues.length > 0 && (
             <div className="p-4 rounded-lg bg-surface-1/55 backdrop-blur-glass border border-red-500/20 hover:border-red-500/40 transition-all duration-200 ease-premium shadow-glass">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">🔍</span>
+                <h3 className="font-medium text-text-primary">
+                  Compatibility Check ({compatibilityIssues.length} issue{compatibilityIssues.length !== 1 ? 's' : ''})
+                </h3>
+              </div>
               <CompatibilityIssueDisplay 
-                issues={compatibilityIssues} 
-                compact={true}
+                issues={compatibilityIssues}
+                compact={false}
+                expandedByDefault={true}
               />
             </div>
           )}
@@ -330,19 +337,28 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
                 focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/10
                 transition-all duration-200 ease-premium text-sm"
             />
+            {/* Show compatibility error status */}
+            {compatibilityIssues.some(i => i.severity === 'error') && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2">
+                <span className="text-red-400 flex-shrink-0 mt-0.5">🔴</span>
+                <p className="text-xs text-red-300">
+                  Fix compatibility issues before saving ({compatibilityIssues.filter(i => i.severity === 'error').length} error{compatibilityIssues.filter(i => i.severity === 'error').length !== 1 ? 's' : ''})
+                </p>
+              </div>
+            )}
             <button
               onClick={handleSaveBuild}
-              disabled={!saveName.trim()}
+              disabled={!saveName.trim() || compatibilityIssues.some(i => i.severity === 'error')}
               className={`
                 w-full px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ease-premium
                 ${
-                  saveName.trim()
+                  saveName.trim() && !compatibilityIssues.some(i => i.severity === 'error')
                     ? 'bg-gradient-to-r from-accent to-purple-600 text-white hover:shadow-lg hover:shadow-accent/20 active:scale-95'
                     : 'bg-surface-2/30 text-text-muted/50 cursor-not-allowed'
                 }
               `}
             >
-              {isSaving ? 'Saving...' : 'Save Build'}
+              {isSaving ? 'Saving...' : compatibilityIssues.some(i => i.severity === 'error') ? '🔴 Fix Issues to Save' : 'Save Build'}
             </button>
           </div>
         </div>

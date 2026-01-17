@@ -67,7 +67,9 @@ export namespace HardCompatibility {
     motherboard: any
   ): ExtendedCompatibilityIssue | null {
     const cpuSocket = getSpecValue(cpu, 'socket');
+    const cpuName = getSpecValue(cpu, 'name') || 'Your CPU';
     const mbSocket = getSpecValue(motherboard, 'socket');
+    const mbName = getSpecValue(motherboard, 'name') || 'Your motherboard';
 
     if (!cpuSocket || !mbSocket) return null;
 
@@ -75,17 +77,28 @@ export namespace HardCompatibility {
     const mbSocketNorm = String(mbSocket).toUpperCase().trim();
 
     if (cpuSocketNorm !== mbSocketNorm) {
+      const fixOptions = [
+        `Option 1: Replace the motherboard with one that has an ${cpuSocketNorm} socket (to match your CPU)`,
+        `Option 2: Replace the CPU with a processor that uses the ${mbSocketNorm} socket (to match your motherboard)`
+      ];
+
       return {
         type: 'CPU Socket Mismatch',
         severity: 'error',
-        message: `CPU socket ${cpuSocket} is incompatible with motherboard socket ${mbSocket}`,
-        explanation: `The CPU requires socket ${cpuSocket}, but the motherboard uses socket ${mbSocket}. These are not compatible.`,
-        fix: `Select a CPU or motherboard with matching socket types. Both must use ${cpuSocket} or ${mbSocket}.`,
+        message: `❌ CPU Socket Mismatch: ${cpuName} requires ${cpuSocketNorm} but motherboard has ${mbSocketNorm}`,
+        explanation: `INCOMPATIBLE: "${cpuName}" uses the ${cpuSocketNorm} socket, but "${mbName}" uses the ${mbSocketNorm} socket. These sockets are not compatible - you cannot install this CPU on this motherboard.
+
+EXACTLY WHAT'S WRONG:
+• Your CPU: ${cpuName} (socket: ${cpuSocketNorm})
+• Your motherboard: ${mbName} (socket: ${mbSocketNorm})
+• Problem: The CPU physically will not fit into the motherboard's socket.`,
+        fix: fixOptions.join('\n\n'),
         affected: ['cpu', 'motherboard'],
         category: 'hard',
         parts_involved: ['cpu', 'motherboard'],
         spec_keys: ['socket'],
-        severity_explanation: 'This is a physical incompatibility - the CPU cannot be installed.'
+        severity_explanation: 'BLOCKING ERROR: This is a physical incompatibility - the CPU cannot be installed. Your build will not work.',
+        recommendation: `To fix this issue, you MUST choose parts with matching sockets. Common sockets include: AM4/AM5 (AMD), LGA1150/LGA1200/LGA1700 (Intel).`
       };
     }
 
@@ -100,7 +113,9 @@ export namespace HardCompatibility {
     motherboard: any
   ): ExtendedCompatibilityIssue | null {
     const ramType = getSpecValue(ram, 'memory_type');
+    const ramName = getSpecValue(ram, 'name') || 'Your RAM';
     const mbType = getSpecValue(motherboard, 'memory_type');
+    const mbName = getSpecValue(motherboard, 'name') || 'Your motherboard';
 
     if (!ramType || !mbType) return null;
 
@@ -108,17 +123,28 @@ export namespace HardCompatibility {
     const mbTypeNorm = String(mbType).toUpperCase().trim();
 
     if (ramTypeNorm !== mbTypeNorm) {
+      const fixOptions = [
+        `Option 1: Replace your RAM with ${mbTypeNorm} memory to match your motherboard's requirements`,
+        `Option 2: Replace your motherboard with one that supports ${ramTypeNorm} memory to match your RAM`
+      ];
+
       return {
         type: 'Memory Type Mismatch',
         severity: 'error',
-        message: `RAM type ${ramType} is not supported by motherboard (requires ${mbType})`,
-        explanation: `RAM must match the motherboard's memory type. You cannot use ${ramType} RAM on a ${mbType} motherboard.`,
-        fix: `Select RAM with type ${mbType} to match your motherboard, or choose a motherboard that supports ${ramType}.`,
+        message: `❌ Memory Type Mismatch: ${ramName} is ${ramTypeNorm} but motherboard requires ${mbTypeNorm}`,
+        explanation: `INCOMPATIBLE: "${ramName}" is ${ramTypeNorm} memory, but "${mbName}" only supports ${mbTypeNorm} memory. The RAM will not fit into the motherboard's memory slots and the system will not work.
+
+EXACTLY WHAT'S WRONG:
+• Your RAM: ${ramName} (type: ${ramTypeNorm})
+• Your motherboard: ${mbName} (supports: ${mbTypeNorm})
+• Problem: The physical connectors don't match - your RAM will not seat into the motherboard's DIMM slots.`,
+        fix: fixOptions.join('\n\n'),
         affected: ['ram', 'motherboard'],
         category: 'hard',
         parts_involved: ['ram', 'motherboard'],
         spec_keys: ['memory_type'],
-        severity_explanation: 'Memory type mismatch prevents system boot and data access.'
+        severity_explanation: 'BLOCKING ERROR: This is a physical incompatibility - the RAM will not fit. Your system will not boot or detect memory.',
+        recommendation: `Ensure both RAM and motherboard support the same memory standard. DDR5 and DDR4 are not compatible with each other.`
       };
     }
 
@@ -158,18 +184,39 @@ export namespace HardCompatibility {
     }
 
     if (issues.length > 0) {
-      const dimensionText = issues.map(i => `${i.dimension} by ${i.excess}mm`).join(', ');
+      const gpuName = getSpecValue(gpu, 'name') || 'Your GPU';
+      const caseName = getSpecValue(case_, 'name') || 'Your case';
+      const dimensionDetails = issues.map(i => {
+        if (i.dimension === 'length') {
+          return `Length: ${i.required}mm (GPU) vs ${i.available}mm (case) - GPU is ${i.excess}mm TOO LONG`;
+        } else {
+          return `Height: ${i.required}mm (GPU) vs ${i.available}mm (case) - GPU is ${i.excess}mm TOO TALL`;
+        }
+      }).join('\n• ');
+
+      const fixOptions = [
+        `Option 1: Get a larger case that can accommodate a GPU that's ${Math.max(...issues.map(i => i.excess))}mm larger`,
+        `Option 2: Replace the GPU with a smaller model that fits within the ${caseName}'s dimensions (max ${maxLength}mm length, ${maxHeight}mm height)`
+      ];
+
       return {
         type: 'GPU Clearance Issue',
         severity: 'error',
-        message: `GPU is too large for the case (exceeds by ${dimensionText})`,
-        explanation: `The GPU dimensions exceed the case's maximum clearance. The GPU won't fit inside the case.`,
-        fix: `Select a case with larger dimensions or choose a smaller GPU. Required dimensions: ${gpuLength}mm L × ${gpuHeight}mm H.`,
+        message: `❌ GPU Too Large: ${gpuName} (${gpuLength}mm × ${gpuHeight}mm) exceeds ${caseName} clearance`,
+        explanation: `INCOMPATIBLE: "${gpuName}" is physically too large to fit inside "${caseName}". The GPU will not fit and cannot be installed.
+
+EXACTLY WHAT'S WRONG:
+• Your GPU: ${gpuName} (${gpuLength}mm length × ${gpuHeight}mm height)
+• Your case: ${caseName} (max GPU space: ${maxLength}mm length × ${maxHeight}mm height)
+• Problems:
+  • ${dimensionDetails}`,
+        fix: fixOptions.join('\n\n'),
         affected: ['gpu', 'case'],
         category: 'hard',
         parts_involved: ['gpu', 'case'],
         spec_keys: ['length_mm', 'height_mm', 'gpu_max_length_mm'],
-        severity_explanation: 'Physical incompatibility - the GPU cannot be installed.'
+        severity_explanation: 'BLOCKING ERROR: This GPU physically will not fit in this case. Your build will not be possible.',
+        recommendation: `Check your case's GPU clearance specifications (usually listed as "Max GPU length") before selecting a graphics card. Large GPUs need large cases.`
       };
     }
 
@@ -184,23 +231,36 @@ export namespace HardCompatibility {
     case_: any
   ): ExtendedCompatibilityIssue | null {
     const coolerHeight = getSpecValue(cooler, 'height_mm');
+    const coolerName = getSpecValue(cooler, 'name') || 'Your cooler';
+    const caseName = getSpecValue(case_, 'name') || 'Your case';
     const maxHeight = getSpecValue(case_, 'cpu_cooler_height_mm');
 
     if (!coolerHeight || !maxHeight) return null;
 
     if (coolerHeight > maxHeight) {
       const excess = coolerHeight - maxHeight;
+      const fixOptions = [
+        `Option 1: Replace the cooler with a shorter model (must be under ${maxHeight}mm tall)`,
+        `Option 2: Replace the case with a larger one that supports cooler heights up to ${coolerHeight}mm`
+      ];
+
       return {
         type: 'Cooler Height Clearance Issue',
         severity: 'error',
-        message: `CPU cooler is too tall for the case (exceeds by ${excess}mm)`,
-        explanation: `The cooler height (${coolerHeight}mm) exceeds the case's maximum clearance (${maxHeight}mm).`,
-        fix: `Select a shorter cooler or a larger case with more vertical clearance.`,
+        message: `❌ Cooler Too Tall: ${coolerName} (${coolerHeight}mm) doesn't fit in ${caseName} (max ${maxHeight}mm)`,
+        explanation: `INCOMPATIBLE: "${coolerName}" is too tall to fit inside "${caseName}". The cooler will hit the case's side panel and cannot be installed.
+
+EXACTLY WHAT'S WRONG:
+• Your cooler: ${coolerName} (height: ${coolerHeight}mm)
+• Your case: ${caseName} (max cooler clearance: ${maxHeight}mm)
+• Problem: The cooler is ${excess}mm TOO TALL - it will not fit vertically inside the case.`,
+        fix: fixOptions.join('\n\n'),
         affected: ['cooler', 'case'],
         category: 'hard',
         parts_involved: ['cooler', 'case'],
         spec_keys: ['height_mm', 'cpu_cooler_height_mm'],
-        severity_explanation: 'The cooler cannot be installed - there is insufficient vertical space.'
+        severity_explanation: 'BLOCKING ERROR: The cooler physically will not fit. You will not be able to assemble this build.',
+        recommendation: `Always check your case's maximum cooler height specification. Large air coolers and thick radiators need more vertical space.`
       };
     }
 
@@ -215,7 +275,9 @@ export namespace HardCompatibility {
     cpu: any
   ): ExtendedCompatibilityIssue | null {
     const coolerSockets = getSpecValue(cooler, 'socket_compatibility');
+    const coolerName = getSpecValue(cooler, 'name') || 'Your cooler';
     const cpuSocket = getSpecValue(cpu, 'socket');
+    const cpuName = getSpecValue(cpu, 'name') || 'Your CPU';
 
     if (!coolerSockets || !cpuSocket) return null;
 
@@ -223,17 +285,34 @@ export namespace HardCompatibility {
     const socketNorm = String(cpuSocket).toUpperCase().trim();
 
     if (!socketsStr.includes(socketNorm)) {
+      const supportedSockets = String(coolerSockets)
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s)
+        .join(', ');
+
+      const fixOptions = [
+        `Option 1: Choose a different cooler that supports socket ${socketNorm}`,
+        `Option 2: Choose a different CPU with a socket supported by this cooler (${supportedSockets})`
+      ];
+
       return {
         type: 'Cooler Socket Incompatibility',
         severity: 'error',
-        message: `Cooler does not support socket ${cpuSocket}`,
-        explanation: `The cooler is not compatible with socket ${cpuSocket}. Check the cooler's supported socket list.`,
-        fix: `Select a cooler that supports socket ${cpuSocket}, or choose a CPU with a compatible socket.`,
+        message: `❌ Cooler Incompatible: ${coolerName} doesn't support ${socketNorm} socket`,
+        explanation: `INCOMPATIBLE: "${coolerName}" does not have mounting brackets for socket ${socketNorm}. The cooler cannot be mechanically mounted to your CPU.
+
+EXACTLY WHAT'S WRONG:
+• Your CPU: ${cpuName} (socket: ${socketNorm})
+• Your cooler: ${coolerName} (supports: ${supportedSockets})
+• Problem: The cooler's mounting hardware is not compatible with this CPU socket.`,
+        fix: fixOptions.join('\n\n'),
         affected: ['cooler', 'cpu'],
         category: 'hard',
         parts_involved: ['cooler', 'cpu'],
         spec_keys: ['socket_compatibility', 'socket'],
-        severity_explanation: 'The cooler cannot be mounted - socket is not supported.'
+        severity_explanation: 'BLOCKING ERROR: The cooler cannot be mounted to your CPU. You will not be able to cool the processor.',
+        recommendation: `Make sure your cooler supports your CPU's socket. Common coolers support multiple sockets, but some are exclusive to one platform (AMD vs Intel).`
       };
     }
 
@@ -248,6 +327,8 @@ export namespace HardCompatibility {
     case_: any
   ): ExtendedCompatibilityIssue | null {
     const mbFormFactor = getSpecValue(motherboard, 'form_factor');
+    const mbName = getSpecValue(motherboard, 'name') || 'Your motherboard';
+    const caseName = getSpecValue(case_, 'name') || 'Your case';
     const caseFactors = getSpecValue(case_, 'motherboard_form_factors');
 
     if (!mbFormFactor || !caseFactors) return null;
@@ -256,17 +337,34 @@ export namespace HardCompatibility {
     const caseFFStr = String(caseFactors).toUpperCase();
 
     if (!caseFFStr.includes(mbFFNorm)) {
+      const supportedFactors = String(caseFactors)
+        .split(',')
+        .map(f => f.trim())
+        .filter(f => f)
+        .join(', ');
+
+      const fixOptions = [
+        `Option 1: Choose a ${supportedFactors} motherboard that fits in this case`,
+        `Option 2: Choose a different case that supports ${mbFFNorm} motherboards`
+      ];
+
       return {
         type: 'Motherboard Form Factor Incompatibility',
         severity: 'error',
-        message: `Case does not support ${mbFormFactor} motherboards`,
-        explanation: `The case supports only ${caseFactors}, but you selected a ${mbFormFactor} motherboard.`,
-        fix: `Select a ${caseFactors} motherboard or choose a case that supports ${mbFormFactor}.`,
+        message: `❌ Motherboard Won't Fit: ${mbName} (${mbFormFactor}) doesn't fit in ${caseName}`,
+        explanation: `INCOMPATIBLE: "${mbName}" is a ${mbFormFactor} motherboard, but "${caseName}" only supports ${supportedFactors} boards. The motherboard will be too large (or small) for this case's mounting bracket.
+
+EXACTLY WHAT'S WRONG:
+• Your motherboard: ${mbName} (size: ${mbFormFactor})
+• Your case: ${caseName} (supports: ${supportedFactors})
+• Problem: The motherboard mounting holes don't align with the case's bracket positions. The board will not mount securely.`,
+        fix: fixOptions.join('\n\n'),
         affected: ['motherboard', 'case'],
         category: 'hard',
         parts_involved: ['motherboard', 'case'],
         spec_keys: ['form_factor', 'motherboard_form_factors'],
-        severity_explanation: 'The motherboard physically cannot be mounted in this case.'
+        severity_explanation: 'BLOCKING ERROR: The motherboard will not fit in this case. You cannot assemble this build.',
+        recommendation: `Common motherboard sizes are ATX (full-size), Micro-ATX (smaller), and Mini-ITX (very small). Always match your motherboard size to your case's supported form factors.`
       };
     }
 
@@ -281,6 +379,8 @@ export namespace HardCompatibility {
     case_: any
   ): ExtendedCompatibilityIssue | null {
     const psuFormFactor = getSpecValue(psu, 'psu_form_factor_type');
+    const psuName = getSpecValue(psu, 'name') || 'Your PSU';
+    const caseName = getSpecValue(case_, 'name') || 'Your case';
     const caseFormFactor = getSpecValue(case_, 'psu_form_factor');
 
     if (!psuFormFactor || !caseFormFactor) return null;
@@ -289,17 +389,34 @@ export namespace HardCompatibility {
     const caseFFStr = String(caseFormFactor).toUpperCase();
 
     if (!caseFFStr.includes(psuFFNorm)) {
+      const supportedFactors = String(caseFormFactor)
+        .split(',')
+        .map(f => f.trim())
+        .filter(f => f)
+        .join(', ');
+
+      const fixOptions = [
+        `Option 1: Choose a ${supportedFactors} PSU that fits in this case`,
+        `Option 2: Choose a different case that supports ${psuFFNorm} power supplies`
+      ];
+
       return {
         type: 'PSU Form Factor Incompatibility',
         severity: 'error',
-        message: `Case does not support ${psuFormFactor} power supplies`,
-        explanation: `The case is designed for ${caseFormFactor} PSUs, but you selected a ${psuFormFactor} PSU.`,
-        fix: `Select a ${caseFormFactor} PSU or choose a case that supports ${psuFormFactor}.`,
+        message: `❌ PSU Won't Fit: ${psuName} (${psuFormFactor}) doesn't fit in ${caseName}`,
+        explanation: `INCOMPATIBLE: "${psuName}" is a ${psuFormFactor} form factor power supply, but "${caseName}" only supports ${supportedFactors} PSUs. The PSU will not fit in the case's power supply bay.
+
+EXACTLY WHAT'S WRONG:
+• Your PSU: ${psuName} (size: ${psuFormFactor})
+• Your case: ${caseName} (supports: ${supportedFactors})
+• Problem: The PSU is physically too large (or the wrong shape) for the case's power supply mounting area.`,
+        fix: fixOptions.join('\n\n'),
         affected: ['psu', 'case'],
         category: 'hard',
         parts_involved: ['psu', 'case'],
         spec_keys: ['psu_form_factor_type', 'psu_form_factor'],
-        severity_explanation: 'The PSU cannot be installed - form factor is incompatible.'
+        severity_explanation: 'BLOCKING ERROR: The PSU will not fit in this case. You cannot power your system.',
+        recommendation: `Common PSU sizes are ATX (full-size, most common) and SFX (compact). Check your case's PSU bay dimensions before selecting a power supply.`
       };
     }
 
@@ -339,32 +456,62 @@ export namespace HardCompatibility {
     const psuHas12VHPWR = getSpecValue(psu, 'pcie_12vhpwr');
 
     if (has12VHPWR && !psuHas12VHPWR) {
+      const gpuName = getSpecValue(gpu, 'name') || 'Your GPU';
+      const psuName = getSpecValue(psu, 'name') || 'Your PSU';
+
       return {
         type: 'Missing 12VHPWR Connector',
         severity: 'error',
-        message: 'GPU requires 12VHPWR connector, but PSU does not support it',
-        explanation: `This modern GPU requires the new 12VHPWR connector, which your PSU does not provide.`,
-        fix: `Select a newer PSU with 12VHPWR support, or choose a GPU with traditional PCIe power connectors.`,
+        message: `❌ Missing Connector: ${gpuName} requires 12VHPWR but ${psuName} doesn't have it`,
+        explanation: `INCOMPATIBLE: "${gpuName}" requires the new 12VHPWR connector (used by RTX 40-series, RTX 4090, etc.), but "${psuName}" does not provide this connector. This is a new power standard that older PSUs don't support.
+
+EXACTLY WHAT'S WRONG:
+• Your GPU: ${gpuName} (requires: 12VHPWR connector)
+• Your PSU: ${psuName} (has: traditional PCIe connectors only)
+• Problem: There is no physical connector on your PSU to supply power to this GPU.`,
+        fix: `Option 1: Replace the PSU with a modern model that includes a 12VHPWR connector (RTX 40-series compatible PSU)\n\nOption 2: Replace the GPU with a model that uses traditional PCIe connectors (8-pin, 6-pin) instead of 12VHPWR`,
         affected: ['gpu', 'psu'],
         category: 'hard',
         parts_involved: ['gpu', 'psu'],
         spec_keys: ['power_connectors', 'pcie_12vhpwr'],
-        severity_explanation: 'GPU cannot receive power without the required connector.'
+        severity_explanation: 'BLOCKING ERROR: The GPU cannot receive power without the 12VHPWR connector. Your GPU will not work.',
+        recommendation: `12VHPWR is a new power standard for high-end RTX 40-series GPUs. Make sure your PSU is RTX 40-series compatible if you're using these modern GPUs.`
       };
     }
 
     if (psu8pins < needs8pin || psu6pins < needs6pin) {
+      const gpuName = getSpecValue(gpu, 'name') || 'Your GPU';
+      const psuName = getSpecValue(psu, 'name') || 'Your PSU';
+      const missingHigh8 = Math.max(0, needs8pin - psu8pins);
+      const missingHigh6 = Math.max(0, needs6pin - psu6pins);
+
+      const missingConnectors = [];
+      if (missingHigh8 > 0) missingConnectors.push(`${missingHigh8}× 8-pin`);
+      if (missingHigh6 > 0) missingConnectors.push(`${missingHigh6}× 6-pin`);
+      const missingText = missingConnectors.join(' and ');
+
+      const fixOptions = [
+        `Option 1: Choose a more powerful PSU with at least ${needs8pin}× 8-pin and ${needs6pin}× 6-pin connectors`,
+        `Option 2: Choose a lower-power GPU that requires fewer connectors`
+      ];
+
       return {
         type: 'Insufficient Power Connectors',
         severity: 'error',
-        message: `GPU requires ${gpuConnectors}, but PSU only provides ${psu8pins}×8-pin, ${psu6pins}×6-pin`,
-        explanation: `The GPU's power connectors are not available on your PSU. Additional adapters cannot reliably power high-end GPUs.`,
-        fix: `Select a PSU with at least ${needs8pin} 8-pin connectors and ${needs6pin} 6-pin connectors.`,
+        message: `❌ Missing Power Connectors: ${gpuName} needs ${missingText} that ${psuName} doesn't provide`,
+        explanation: `INCOMPATIBLE: "${gpuName}" requires ${gpuConnectors}, but "${psuName}" does not have enough power connectors. Using adapters on high-end GPUs can cause power delivery issues, system crashes, or even fire hazards.
+
+EXACTLY WHAT'S WRONG:
+• Your GPU: ${gpuName} (requires: ${needs8pin}× 8-pin and ${needs6pin}× 6-pin connectors)
+• Your PSU: ${psuName} (provides: ${psu8pins}× 8-pin and ${psu6pins}× 6-pin)
+• Missing: ${missingText}`,
+        fix: fixOptions.join('\n\n'),
         affected: ['gpu', 'psu'],
         category: 'hard',
         parts_involved: ['gpu', 'psu'],
         spec_keys: ['power_connectors', 'pcie_8pin_count', 'pcie_6pin_count'],
-        severity_explanation: 'GPU cannot receive adequate power without proper connectors.'
+        severity_explanation: 'BLOCKING ERROR: The GPU cannot receive adequate power. Using adapters is dangerous and not recommended.',
+        recommendation: `High-end GPUs (RTX 4080+, RTX 3080+) require robust power delivery. Use a PSU that natively supports all required connectors.`
       };
     }
 
