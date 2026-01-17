@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useBuilderStore } from '@/store/builder';
 import { supabase } from '@/lib/supabaseClient';
+import { evaluateCompatibility } from '@/lib/compatibilityEngine';
+import CompatibilityIssueDisplay from './CompatibilityIssueDisplay';
+import type { CompatibilityIssue } from '@/lib/compatibilityEngine';
 
 const BUILD_ORDER = [
   { key: 'cpu', label: 'CPU', icon: '🔧' },
@@ -27,6 +30,8 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
   const [saveName, setSaveName] = useState(buildName || '');
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [compatibilityIssues, setCompatibilityIssues] = useState<CompatibilityIssue[]>([]);
+  const [evaluatingCompatibility, setEvaluatingCompatibility] = useState(false);
 
   // Load parts for active category
   useEffect(() => {
@@ -58,6 +63,29 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
 
     loadParts();
   }, [activeCategory]);
+
+  // Evaluate compatibility whenever parts change
+  useEffect(() => {
+    const evaluateCompatibilityIssues = async () => {
+      try {
+        setEvaluatingCompatibility(true);
+        const result = await evaluateCompatibility(builderStore.selected);
+        setCompatibilityIssues(result.issues || []);
+      } catch (error) {
+        console.error('Error evaluating compatibility:', error);
+        setCompatibilityIssues([]);
+      } finally {
+        setEvaluatingCompatibility(false);
+      }
+    };
+
+    // Only evaluate if at least one part is selected
+    if (Object.values(builderStore.selected).some(part => part)) {
+      evaluateCompatibilityIssues();
+    } else {
+      setCompatibilityIssues([]);
+    }
+  }, [builderStore.selected]);
 
   const filteredParts = useMemo(() => {
     const categoryParts = parts[activeCategory] || [];
@@ -218,6 +246,16 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
       {/* Right Column - Build Summary & Save */}
       <div className="lg:col-span-1">
         <div className="space-y-4 sticky top-0">
+          {/* Compatibility Status */}
+          {compatibilityIssues.length > 0 && (
+            <div className="p-4 rounded-lg bg-surface-1/55 backdrop-blur-glass border border-red-500/20 hover:border-red-500/40 transition-all duration-200 ease-premium shadow-glass">
+              <CompatibilityIssueDisplay 
+                issues={compatibilityIssues} 
+                compact={true}
+              />
+            </div>
+          )}
+
           {/* Current Selection */}
           <div className="p-4 rounded-lg bg-surface-1/55 backdrop-blur-glass border border-border/10 hover:border-accent/20 transition-all duration-200 ease-premium shadow-glass">
             <h3 className="font-medium text-sm text-text-muted mb-3">Current Selection</h3>

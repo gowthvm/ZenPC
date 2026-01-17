@@ -3,10 +3,15 @@
  * 
  * Evaluates compatibility between parts using rules from Supabase.
  * All logic is spec-driven - no hardcoded compatibility checks.
+ * 
+ * This engine combines:
+ * 1. Database-driven rules (from compatibility_rules table)
+ * 2. Advanced heuristic checks (from advancedCompatibilityEngine)
  */
 
 import { supabase } from './supabaseClient';
 import { getSpecDefinition } from './specDictionary';
+import { evaluateAdvancedCompatibility, ExtendedCompatibilityIssue } from './advancedCompatibilityEngine';
 
 export type CompatibilitySeverity = 'error' | 'warning' | 'info';
 export type CompatibilityOperator = 
@@ -216,6 +221,7 @@ export async function evaluateCompatibility(
   const issues: CompatibilityIssue[] = [];
   const confirmations: CompatibilityConfirmation[] = [];
   
+  // ========== PHASE 1: Database-driven rules ==========
   // Evaluate each rule
   for (const rule of rules) {
     const sourcePart = selectedParts[rule.source_category];
@@ -252,7 +258,20 @@ export async function evaluateCompatibility(
       }
     }
   }
+
+  // ========== PHASE 2: Advanced heuristic checks ==========
+  console.log('🚀 Running advanced compatibility checks...');
+  const advancedIssues = await evaluateAdvancedCompatibility(selectedParts);
+  console.log(`📊 Advanced checks found ${advancedIssues.length} issues`);
   
+  // Merge advanced issues, avoiding duplicates
+  const existingIssueMessages = new Set(issues.map(i => i.message));
+  for (const advIssue of advancedIssues) {
+    if (!existingIssueMessages.has(advIssue.message)) {
+      issues.push(advIssue as CompatibilityIssue);
+    }
+  }
+
   // Sort issues by severity (error > warning > info)
   const severityOrder: Record<CompatibilitySeverity, number> = {
     error: 0,

@@ -454,6 +454,376 @@ export const SPEC_DICTIONARY: SpecDictionary = {
     type: 'boolean',
     description: 'Liquid cooling support'
   },
+
+  // ==================== ENHANCED COMPATIBILITY SPECS ====================
+  // CPU specs
+  generation: {
+    label: 'Generation',
+    categories: ['cpu', 'gpu'],
+    group: 'compatibility',
+    unit: null,
+    importance: 'high',
+    type: 'string',
+    description: 'Processor generation (e.g., Ryzen 5000, i9-13K)'
+  },
+  socket_revision: {
+    label: 'Socket Revision',
+    categories: ['motherboard'],
+    group: 'compatibility',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'Socket version (AM5, LGA1700, etc.)'
+  },
+  bios_version_required: {
+    label: 'BIOS Version Required',
+    categories: ['motherboard'],
+    group: 'compatibility',
+    unit: null,
+    importance: 'low',
+    type: 'string',
+    description: 'Minimum BIOS version for CPU support'
+  },
+
+  // GPU specs
+  gpu_memory_type: {
+    label: 'GPU Memory Type',
+    categories: ['gpu'],
+    group: 'memory',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'GDDR6, GDDR6X, HBM, etc.'
+  },
+  gpu_bus_width: {
+    label: 'GPU Bus Width',
+    categories: ['gpu'],
+    group: 'connectivity',
+    unit: 'bit',
+    importance: 'low',
+    type: 'number',
+    description: 'Memory bus width'
+  },
+  pcie_generation: {
+    label: 'PCIe Generation',
+    categories: ['gpu', 'storage', 'motherboard'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'PCIe version (3.0, 4.0, 5.0)'
+  },
+  pcie_lanes_required: {
+    label: 'PCIe Lanes Required',
+    categories: ['gpu'],
+    group: 'connectivity',
+    unit: 'lanes',
+    importance: 'low',
+    type: 'number',
+    description: 'PCIe lanes needed (typically x16 or x8)'
+  },
+
+  // Cooler specs
+  tdp_rating_watts: {
+    label: 'TDP Rating',
+    categories: ['cooler'],
+    group: 'power',
+    unit: 'W',
+    importance: 'high',
+    type: 'number',
+    description: 'Maximum TDP the cooler can handle'
+  },
+  socket_compatibility: {
+    label: 'Socket Compatibility',
+    categories: ['cooler'],
+    group: 'compatibility',
+    unit: null,
+    importance: 'high',
+    type: 'string',
+    description: 'Supported sockets (e.g., "AM4, AM5")'
+  },
+  thickness_mm: {
+    label: 'Thickness',
+    categories: ['gpu', 'cooler'],
+    group: 'physical',
+    unit: 'mm',
+    importance: 'medium',
+    type: 'number',
+    description: 'Component thickness'
+  },
+
+  // Case specs
+  psu_form_factor: {
+    label: 'PSU Form Factor',
+    categories: ['case'],
+    group: 'compatibility',
+    unit: null,
+    importance: 'high',
+    type: 'string',
+    description: 'Supported PSU sizes (ATX, SFX, etc.)'
+  },
+  motherboard_form_factors: {
+    label: 'Motherboard Form Factors',
+    categories: ['case'],
+    group: 'compatibility',
+    unit: null,
+    importance: 'high',
+    type: 'string',
+    description: 'Supported motherboard sizes (comma-separated: ATX,mATX,ITX)'
+  },
+  interior_length_mm: {
+    label: 'Interior Length',
+    categories: ['case'],
+    group: 'physical',
+    unit: 'mm',
+    importance: 'medium',
+    type: 'number',
+    description: 'Interior length of case'
+  },
+  interior_width_mm: {
+    label: 'Interior Width',
+    categories: ['case'],
+    group: 'physical',
+    unit: 'mm',
+    importance: 'medium',
+    type: 'number',
+    description: 'Interior width of case'
+  },
+  interior_height_mm: {
+    label: 'Interior Height',
+    categories: ['case'],
+    group: 'physical',
+    unit: 'mm',
+    importance: 'medium',
+    type: 'number',
+    description: 'Interior height of case'
+  },
+  power_supply_cover: {
+    label: 'Power Supply Cover',
+    categories: ['case'],
+    group: 'features',
+    unit: null,
+    importance: 'low',
+    type: 'boolean',
+    description: 'Has shroud/cover for PSU'
+  },
+  drive_bays_35: {
+    label: '3.5" Drive Bays',
+    categories: ['case'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'low',
+    type: 'number',
+    description: 'Number of 3.5" drive bays'
+  },
+  drive_bays_25: {
+    label: '2.5" Drive Bays',
+    categories: ['case'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'low',
+    type: 'number',
+    description: 'Number of 2.5" drive bays'
+  },
+
+  // RAM specs
+  ecc_support: {
+    label: 'ECC Support',
+    categories: ['motherboard', 'ram'],
+    group: 'features',
+    unit: null,
+    importance: 'low',
+    type: 'boolean',
+    description: 'Error Correcting Code support'
+  },
+  max_ram_gb: {
+    label: 'Max RAM',
+    categories: ['motherboard'],
+    group: 'memory',
+    unit: 'GB',
+    importance: 'medium',
+    type: 'number',
+    description: 'Maximum RAM capacity'
+  },
+  max_ram_slots: {
+    label: 'Max RAM Slots',
+    categories: ['motherboard'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'low',
+    type: 'number',
+    description: 'Number of RAM slots'
+  },
+
+  // Storage specs
+  form_factor_storage: {
+    label: 'Storage Form Factor',
+    categories: ['storage'],
+    group: 'physical',
+    unit: null,
+    importance: 'high',
+    type: 'string',
+    description: '2.5", 3.5", M.2, etc.'
+  },
+  nvme_protocol: {
+    label: 'NVMe Protocol',
+    categories: ['storage'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'NVMe version (1.3, 1.4, etc.)'
+  },
+  nvme_pcie_gen: {
+    label: 'NVMe PCIe Gen',
+    categories: ['storage', 'motherboard'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'PCIe generation for NVMe (3.0, 4.0, 5.0)'
+  },
+
+  // PSU specs
+  psu_form_factor_type: {
+    label: 'PSU Form Factor',
+    categories: ['psu'],
+    group: 'physical',
+    unit: null,
+    importance: 'high',
+    type: 'string',
+    description: 'ATX, SFX, TFX, etc.'
+  },
+  modular_type: {
+    label: 'Modular Type',
+    categories: ['psu'],
+    group: 'features',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'Non-modular, Semi-modular, Fully-modular'
+  },
+  pcie_8pin_count: {
+    label: 'PCIe 8-Pin Count',
+    categories: ['psu'],
+    group: 'power',
+    unit: null,
+    importance: 'high',
+    type: 'number',
+    description: 'Number of 8-pin PCIe power connectors'
+  },
+  pcie_6pin_count: {
+    label: 'PCIe 6-Pin Count',
+    categories: ['psu'],
+    group: 'power',
+    unit: null,
+    importance: 'high',
+    type: 'number',
+    description: 'Number of 6-pin PCIe power connectors'
+  },
+  pcie_12vhpwr: {
+    label: '12VHPWR Support',
+    categories: ['psu'],
+    group: 'power',
+    unit: null,
+    importance: 'medium',
+    type: 'boolean',
+    description: 'New 12VHPWR connector support'
+  },
+  motherboard_power_pins: {
+    label: 'Motherboard Power (24-pin)',
+    categories: ['psu'],
+    group: 'power',
+    unit: null,
+    importance: 'high',
+    type: 'boolean',
+    description: 'Standard 24-pin ATX power'
+  },
+  cpu_power_4pin: {
+    label: 'CPU Power (4-pin)',
+    categories: ['psu'],
+    group: 'power',
+    unit: null,
+    importance: 'high',
+    type: 'number',
+    description: 'Number of 4-pin CPU power connectors'
+  },
+  cpu_power_8pin: {
+    label: 'CPU Power (8-pin)',
+    categories: ['psu'],
+    group: 'power',
+    unit: null,
+    importance: 'high',
+    type: 'number',
+    description: 'Number of 8-pin CPU power connectors'
+  },
+
+  // Motherboard specs
+  storage_interfaces: {
+    label: 'Storage Interfaces',
+    categories: ['motherboard'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'Supported interfaces (SATA, NVMe, M.2, etc.)'
+  },
+  pcie_slot_count: {
+    label: 'PCIe Slots',
+    categories: ['motherboard'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'low',
+    type: 'number',
+    description: 'Total number of PCIe slots'
+  },
+  pcie_gen_slots: {
+    label: 'PCIe Gen by Slot',
+    categories: ['motherboard'],
+    group: 'connectivity',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'PCIe generations available (e.g., "x16 Gen5, x1 Gen3")'
+  },
+  overclocking_support: {
+    label: 'Overclocking',
+    categories: ['motherboard'],
+    group: 'features',
+    unit: null,
+    importance: 'low',
+    type: 'boolean',
+    description: 'Supports CPU/memory overclocking'
+  },
+
+  // Performance reference specs
+  cpu_tier: {
+    label: 'CPU Tier',
+    categories: ['cpu'],
+    group: 'performance',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'Budget, Mid-range, High-end, Enthusiast (for heuristic matching)'
+  },
+  gpu_tier: {
+    label: 'GPU Tier',
+    categories: ['gpu'],
+    group: 'performance',
+    unit: null,
+    importance: 'medium',
+    type: 'string',
+    description: 'Entry, Budget, Mid-range, High-end, Flagship'
+  },
+  gpu_memory_bandwidth_gbps: {
+    label: 'Memory Bandwidth',
+    categories: ['gpu'],
+    group: 'performance',
+    unit: 'GB/s',
+    importance: 'low',
+    type: 'number',
+    description: 'GPU memory bandwidth'
+  },
 };
 
 /**
