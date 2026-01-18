@@ -9,7 +9,7 @@ Design and implement a comprehensive PC compatibility checking system that valid
 
 #### Socket Compatibility (ERROR)
 - CPU socket must exactly match motherboard socket
-- Examples: AM5 CPU requires AM5 motherboard, LGA1700 CPU requires LGA1700 motherboard
+- Examples: AM5 CPU requires AM5 motherboard, LGA1700 CPU requires LGA1700 motherboard.
 - Handle socket variations: AM4 vs AM5, LGA1200 vs LGA1700, etc.
 
 #### Chipset Support (WARNING/INFO)
