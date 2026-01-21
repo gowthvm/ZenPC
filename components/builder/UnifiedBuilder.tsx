@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilderStore } from '@/store/builder';
 import { supabase } from '@/lib/supabaseClient';
 import BuilderSidebar from './BuilderSidebar';
@@ -9,6 +10,7 @@ import BuildFlowPanel from './BuildFlowPanel';
 import GuidePanel from './GuidePanel';
 import InsightsPanel from './InsightsPanel';
 import ProfilePanel from './ProfilePanel';
+import { CursorGlow } from '@/components/effects/MagneticElement';
 
 export type BuilderMode = 'build' | 'guide' | 'insights' | 'profile' | 'history';
 
@@ -46,7 +48,7 @@ export default function UnifiedBuilder() {
   useEffect(() => {
     const loadBuilds = async () => {
       if (!user) return;
-      
+
       try {
         setLoading(true);
         const { data, error } = await supabase
@@ -70,7 +72,7 @@ export default function UnifiedBuilder() {
   // Smooth cursor effect with requestAnimationFrame - matches landing page
   useEffect(() => {
     setIsClient(true);
-    
+
     let targetX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
     let targetY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
 
@@ -141,7 +143,7 @@ export default function UnifiedBuilder() {
             created_at: new Date().toISOString(),
           }])
           .select();
-        
+
         if (error) throw error;
         if (data && data[0]) {
           setCurrentBuildId(data[0].id);
@@ -154,7 +156,7 @@ export default function UnifiedBuilder() {
         .select('*')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
-      
+
       setBuilds(data || []);
     } catch (error) {
       console.error('Error saving build:', error);
@@ -169,7 +171,7 @@ export default function UnifiedBuilder() {
         .from('builds')
         .delete()
         .eq('id', buildId);
-      
+
       if (error) throw error;
 
       setBuilds(builds.filter(b => b.id !== buildId));
@@ -204,7 +206,7 @@ export default function UnifiedBuilder() {
         .select('*')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
-      
+
       setBuilds(updatedBuilds || []);
     } catch (error) {
       console.error('Error duplicating build:', error);
@@ -258,7 +260,7 @@ export default function UnifiedBuilder() {
                           Updated {new Date(build.updatedAt).toLocaleDateString()}
                         </p>
                       </div>
-                      
+
                       <div className="mt-auto pt-4 border-t border-border/10 flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-base">
                         <button
                           onClick={(e) => {
@@ -299,23 +301,20 @@ export default function UnifiedBuilder() {
 
   return (
     <div className="flex h-dvh bg-bg text-text-primary overflow-hidden relative">
-      {/* Purple cursor effect - matches Landing page */}
-      <div style={{
-        position: 'fixed',
-        width: '600px',
-        height: '600px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 70%)',
-        left: `${smoothPosition.x}px`,
-        top: `${smoothPosition.y}px`,
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-        zIndex: 0,
-        filter: 'blur(30px)',
-        willChange: 'transform',
-        transition: 'opacity 0.3s ease-out',
-        opacity: 1
-      }} />
+      {/* Ambient cursor glow effect */}
+      <CursorGlow color="rgb(99, 112, 241)" size={500} blur={60} opacity={0.2} />
+
+      {/* Morphing background shapes */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div
+          className="morph-shape absolute -top-32 -right-32 w-96 h-96 bg-accent/10"
+          style={{ animationDelay: '0s' }}
+        />
+        <div
+          className="morph-shape absolute -bottom-32 -left-32 w-80 h-80 bg-premium-purple/10"
+          style={{ animationDelay: '-4s' }}
+        />
+      </div>
 
       {/* Sidebar */}
       <BuilderSidebar
@@ -360,10 +359,20 @@ export default function UnifiedBuilder() {
           </div>
         </div>
 
-        {/* Panel Content */}
+        {/* Panel Content with Animated Transitions */}
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto w-full">
-            {renderActivePanel()}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeMode}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+              >
+                {renderActivePanel()}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </main>

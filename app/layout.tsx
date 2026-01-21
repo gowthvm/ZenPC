@@ -2,6 +2,7 @@ import './globals.css';
 
 import type { Metadata } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { ToastProvider } from '@/components/ui/Toast';
 
 const fontSans = Inter({
   subsets: ['latin'],
@@ -16,8 +17,9 @@ const fontDisplay = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'ZenPC',
-  description: 'Premium PC Builder',
+  title: 'ZenPC - Premium PC Builder',
+  description: 'Build your perfect PC with real-time compatibility checking, expert recommendations, and a beautiful interface.',
+  keywords: ['PC Builder', 'Custom PC', 'Computer Build', 'Gaming PC', 'Build Guide'],
 };
 
 export default function RootLayout({
@@ -28,7 +30,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${fontSans.variable} ${fontDisplay.variable}`}>
       <body className="min-h-dvh bg-bg text-text-primary font-sans antialiased">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

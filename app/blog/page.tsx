@@ -1,91 +1,171 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import PageLayout from '@/components/layouts/PageLayout';
+import { Calendar, Clock, ArrowRight, Tag } from 'lucide-react';
+
+const featuredPost = {
+  title: 'The Ultimate Guide to Building a Gaming PC in 2024',
+  excerpt: 'Everything you need to know about selecting components, managing your budget, and getting the best performance for your money.',
+  date: 'Jan 15, 2024',
+  readTime: '12 min read',
+  category: 'Guides',
+  image: '🎮',
+};
+
+const blogPosts = [
+  {
+    title: 'RTX 5090 vs RTX 4090: Is It Worth the Upgrade?',
+    excerpt: 'We compare the latest generation GPUs to help you decide if it\'s time to upgrade.',
+    date: 'Jan 12, 2024',
+    readTime: '8 min read',
+    category: 'Reviews',
+  },
+  {
+    title: 'How to Choose the Right Power Supply',
+    excerpt: 'A comprehensive PSU buying guide covering efficiency, wattage, and modularity.',
+    date: 'Jan 10, 2024',
+    readTime: '6 min read',
+    category: 'Guides',
+  },
+  {
+    title: 'DDR5 RAM: Everything You Need to Know',
+    excerpt: 'Understanding the new memory standard and whether it\'s right for your build.',
+    date: 'Jan 8, 2024',
+    readTime: '7 min read',
+    category: 'Tech',
+  },
+  {
+    title: 'Budget Build Challenge: $800 Gaming PC',
+    excerpt: 'We put together the best possible gaming PC for under $800. Here\'s what we picked.',
+    date: 'Jan 5, 2024',
+    readTime: '10 min read',
+    category: 'Builds',
+  },
+  {
+    title: 'Cable Management 101: Tips and Tricks',
+    excerpt: 'Transform your build from messy to masterpiece with these cable management techniques.',
+    date: 'Jan 3, 2024',
+    readTime: '5 min read',
+    category: 'Tips',
+  },
+];
+
+const categories = ['All', 'Guides', 'Reviews', 'Builds', 'Tech', 'Tips'];
 
 export default function BlogPage() {
-  const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 });
-  const rafRef = useRef<number>();
-  const [isClient, setIsClient] = useState(false);
-
-  // Smooth cursor effect with requestAnimationFrame
-  useEffect(() => {
-    setIsClient(true);
-    
-    let targetX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
-    let targetY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isClient) return;
-      targetX = e.clientX;
-      targetY = e.clientY;
-    };
-
-    const animate = () => {
-      setSmoothPosition(prev => ({
-        x: prev.x + (targetX - prev.x) * 0.1,
-        y: prev.y + (targetY - prev.y) * 0.1
-      }));
-      rafRef.current = requestAnimationFrame(animate);
-    };
-
-    rafRef.current = requestAnimationFrame(animate);
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [isClient]);
-
   return (
-    <main className="min-h-dvh bg-bg text-text-primary relative overflow-hidden">
-      {/* Purple cursor effect */}
-      <div style={{
-        position: 'fixed',
-        width: '600px',
-        height: '600px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 70%)',
-        left: `${smoothPosition.x}px`,
-        top: `${smoothPosition.y}px`,
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-        zIndex: 0,
-        filter: 'blur(30px)',
-        willChange: 'transform',
-        transition: 'opacity 0.3s ease-out',
-        opacity: 1
-      }} />
-      
-      <div className="relative z-10 max-w-4xl mx-auto py-20 px-4 min-h-[60vh]">
-        <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">ZenPC Blog</h1>
-        <p className="text-text-muted mb-8 text-lg">Insights, news, and tips from the ZenPC team.</p>
-        <section className="grid gap-8 md:grid-cols-2">
-          {/* Example blog posts */}
-          <article className="card p-6 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-base ease-premium cursor-pointer">
-            <h2 className="text-2xl font-semibold mb-2 text-text-primary">Building the Ultimate Gaming PC in 2026</h2>
-            <p className="text-text-muted mb-4 leading-relaxed">A comprehensive guide to the best components and configurations for a high-end gaming rig this year.</p>
-            <a href="#" className="text-accent hover:underline transition-colors duration-base ease-premium">Read more →</a>
-          </article>
-          <article className="card p-6 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-base ease-premium cursor-pointer">
-            <h2 className="text-2xl font-semibold mb-2 text-text-primary">How ZenPC Ensures Compatibility</h2>
-            <p className="text-text-muted mb-4 leading-relaxed">Learn about our real-time compatibility engine and how it helps you avoid costly mistakes.</p>
-            <a href="#" className="text-accent hover:underline transition-colors duration-base ease-premium">Read more →</a>
-          </article>
-          <article className="card p-6 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-base ease-premium cursor-pointer">
-            <h2 className="text-2xl font-semibold mb-2 text-text-primary">The Future of PC Building</h2>
-            <p className="text-text-muted mb-4 leading-relaxed">Trends and predictions for the next generation of custom PC builds.</p>
-            <a href="#" className="text-accent hover:underline transition-colors duration-base ease-premium">Read more →</a>
-          </article>
-          <article className="card p-6 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-base ease-premium cursor-pointer">
-            <h2 className="text-2xl font-semibold mb-2 text-text-primary">Meet the ZenPC Team</h2>
-            <p className="text-text-muted mb-4 leading-relaxed">Get to know the people behind ZenPC and our mission to empower PC builders.</p>
-            <a href="#" className="text-accent hover:underline transition-colors duration-base ease-premium">Read more →</a>
-          </article>
-        </section>
-      </div>
-    </main>
+    <PageLayout
+      title="Blog"
+      description="News, guides, reviews, and tips from the ZenPC team"
+      maxWidth="6xl"
+    >
+      {/* Categories */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="flex flex-wrap gap-2 mb-12"
+      >
+        {categories.map((category, index) => (
+          <motion.button
+            key={category}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 + index * 0.05 }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${index === 0
+                ? 'bg-accent text-white'
+                : 'bg-surface-1/40 text-text-muted hover:text-text-primary hover:bg-surface-2/50 border border-border/10'
+              }`}
+          >
+            {category}
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* Featured Post */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="mb-16"
+      >
+        <Link href="#" className="block group">
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-accent/10 via-purple-600/5 to-cyan-600/10 border border-border/10 hover:border-accent/30 transition-all">
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+              <div className="text-8xl">{featuredPost.image}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4">
+                  <span className="px-3 py-1 rounded-full bg-accent/20 text-accent text-xs font-medium">
+                    {featuredPost.category}
+                  </span>
+                  <span className="text-text-muted text-sm flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {featuredPost.date}
+                  </span>
+                  <span className="text-text-muted text-sm flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {featuredPost.readTime}
+                  </span>
+                </div>
+                <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary mb-3 group-hover:text-accent transition-colors">
+                  {featuredPost.title}
+                </h2>
+                <p className="text-text-muted leading-relaxed mb-4">
+                  {featuredPost.excerpt}
+                </p>
+                <span className="inline-flex items-center gap-2 text-accent font-medium">
+                  Read More <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </Link>
+      </motion.section>
+
+      {/* Posts Grid */}
+      <motion.section>
+        <h2 className="font-display text-2xl font-bold text-text-primary mb-8">
+          Latest Articles
+        </h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {blogPosts.map((post, index) => (
+            <motion.div
+              key={post.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 + index * 0.1 }}
+            >
+              <Link href="#" className="block h-full group">
+                <div className="h-full p-6 rounded-2xl bg-surface-1/40 border border-border/10 hover:border-accent/30 transition-all flex flex-col">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="px-2 py-1 rounded-md bg-surface-2/50 text-text-muted text-xs flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
+                      {post.category}
+                    </span>
+                    <span className="text-text-muted/70 text-xs">{post.date}</span>
+                  </div>
+                  <h3 className="font-semibold text-lg text-text-primary mb-2 group-hover:text-accent transition-colors line-clamp-2">
+                    {post.title}
+                  </h3>
+                  <p className="text-text-muted text-sm mb-4 flex-1 line-clamp-2">
+                    {post.excerpt}
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-text-muted/70 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {post.readTime}
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-text-muted/50 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
+    </PageLayout>
   );
 }

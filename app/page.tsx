@@ -1,23 +1,120 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from './components/ui/button';
-import { Divider } from './components/ui/divider';
 import { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import Aurora from '@/components/Aurora';
+import { CursorGlow } from '@/components/effects/MagneticElement';
+import { Particles } from '@/components/effects/Particles';
+import {
+  Zap, Shield, BookOpen, Wallet, Users, Lightbulb,
+  ArrowRight, ChevronUp, Cpu, Monitor, HardDrive
+} from 'lucide-react';
+
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+  }
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }
+  }
+};
+
+// Feature data
+const features = [
+  {
+    icon: Zap,
+    title: 'Real-time Pricing',
+    description: 'Live price updates from multiple retailers ensure you always get the best deal available.',
+    color: 'from-amber-500/20 to-orange-600/20',
+    iconColor: 'text-amber-400'
+  },
+  {
+    icon: Shield,
+    title: 'Smart Compatibility',
+    description: 'Advanced algorithms check for compatibility issues before you make any purchase decisions.',
+    color: 'from-green-500/20 to-emerald-600/20',
+    iconColor: 'text-green-400'
+  },
+  {
+    icon: BookOpen,
+    title: 'Build History',
+    description: 'Track and compare all your builds with detailed performance metrics and cost analysis.',
+    color: 'from-blue-500/20 to-cyan-600/20',
+    iconColor: 'text-blue-400'
+  },
+  {
+    icon: Wallet,
+    title: 'Budget Tracking',
+    description: 'Stay within budget with real-time cost calculations and intelligent spending alerts.',
+    color: 'from-purple-500/20 to-violet-600/20',
+    iconColor: 'text-purple-400'
+  },
+  {
+    icon: Lightbulb,
+    title: 'Build Guides',
+    description: 'Step-by-step guides for assembly, cable management, and performance optimization.',
+    color: 'from-rose-500/20 to-pink-600/20',
+    iconColor: 'text-rose-400'
+  },
+  {
+    icon: Users,
+    title: 'Community Builds',
+    description: 'Browse and learn from amazing builds shared by our passionate community.',
+    color: 'from-cyan-500/20 to-teal-600/20',
+    iconColor: 'text-cyan-400'
+  },
+];
+
+// Steps data
+const steps = [
+  {
+    icon: Cpu,
+    title: 'Select Components',
+    description: 'Choose from our curated selection of compatible components',
+    number: '01'
+  },
+  {
+    icon: Shield,
+    title: 'Check Compatibility',
+    description: 'Real-time validation ensures all parts work together',
+    number: '02'
+  },
+  {
+    icon: Monitor,
+    title: 'Build & Order',
+    description: 'Get your complete build list and order with confidence',
+    number: '03'
+  },
+];
 
 export default function Page() {
-  const [scrollY, setScrollY] = useState(0);
-  const [sectionVisibility, setSectionVisibility] = useState<{ [key: string]: boolean }>({});
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 });
-  const rafRef = useRef<number>();
-  const [isClient, setIsClient] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
 
   useEffect(() => {
-    // Check for existing user session
     const checkUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -30,69 +127,8 @@ export default function Page() {
         setLoading(false);
       }
     };
-
     checkUser();
-
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          setSectionVisibility((prev) => ({
-            ...prev,
-            [entry.target.id]: entry.isIntersecting,
-          }));
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    window.addEventListener('scroll', handleScroll);
-    
-    // Observe all sections
-    document.querySelectorAll('section').forEach((section) => {
-      observer.observe(section);
-    });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
-    };
   }, []);
-
-  // Smooth cursor effect with requestAnimationFrame
-  useEffect(() => {
-    setIsClient(true);
-    
-    let targetX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
-    let targetY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isClient) return;
-      targetX = e.clientX;
-      targetY = e.clientY;
-    };
-
-    const animate = () => {
-      setSmoothPosition(prev => ({
-        x: prev.x + (targetX - prev.x) * 0.1,
-        y: prev.y + (targetY - prev.y) * 0.1
-      }));
-      rafRef.current = requestAnimationFrame(animate);
-    };
-
-    rafRef.current = requestAnimationFrame(animate);
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [isClient]);
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-text-primary relative overflow-hidden">
@@ -106,373 +142,499 @@ export default function Page() {
         />
       </div>
 
-      {/* Optional overlay for better text readability */}
-      <div className="fixed inset-0 z-5 bg-gradient-to-b from-transparent via-bg/20 to-bg/40 pointer-events-none" />
+      {/* Gradient overlay */}
+      <div className="fixed inset-0 z-[1] bg-gradient-to-b from-transparent via-bg/20 to-bg/60 pointer-events-none" />
 
-      {/* Purple cursor effect */}
-      <div style={{
-        position: 'fixed',
-        width: '600px',
-        height: '600px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 70%)',
-        left: `${smoothPosition.x}px`,
-        top: `${smoothPosition.y}px`,
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-        zIndex: 0,
-        filter: 'blur(30px)',
-        willChange: 'transform',
-        transition: 'opacity 0.3s ease-out',
-        opacity: 1
-      }} />
-      
-      {/* Content wrapper */}
+      {/* Cursor glow effect */}
+      <CursorGlow color="rgb(99, 112, 241)" size={500} blur={60} opacity={0.15} />
+
+      {/* Particles (subtle, behind content) */}
+      <div className="fixed inset-0 z-[2] pointer-events-none">
+        <Particles
+          quantity={30}
+          color="rgb(99, 112, 241)"
+          minSize={1}
+          maxSize={2}
+          speed={0.3}
+          showConnections={false}
+          mouseInteract={false}
+        />
+      </div>
+
+      {/* Content */}
       <div className="relative z-20">
-      {/* Minimal Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full px-6 pt-6 pb-4 flex items-center justify-between gap-8 bg-surface-1/20 backdrop-blur-glass border-b border-border/10 shadow-glass transition-all duration-300">
-        <div className="max-w-6xl mx-auto w-full flex items-center justify-between gap-8">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center font-display text-sm font-bold text-white select-none shadow-lg">Z</div>
-            <span className="font-display text-xl font-semibold text-text-primary">ZenPC</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200">Features</Link>
-            <Link href="#how-it-works" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200">How It Works</Link>
-            <Link href="#about" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200">About</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            {loading ? (
-              <div className="w-20 h-8 bg-surface-2/50 rounded-full animate-pulse"></div>
-            ) : user ? (
-              <>
-                <Link href="/builder" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200 truncate max-w-32">
-                  {user.email}
-                </Link>
-                <Button
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    setUser(null);
-                    window.location.href = '/';
-                  }}
-                  variant="outline"
-                  className="px-4 py-2 text-sm font-medium hover:bg-surface-2/50 transition-all duration-200"
+        {/* Header */}
+        <motion.header
+          className="fixed top-0 left-0 right-0 z-50 w-full px-6 py-4"
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
+        >
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-between gap-8 px-6 py-3 rounded-2xl bg-surface-1/40 backdrop-blur-xl border border-border/10 shadow-glass">
+              <Link href="/" className="flex items-center gap-3 group">
+                <motion.div
+                  className="h-9 w-9 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center font-display text-sm font-bold text-white select-none shadow-lg"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200">Log In</Link>
-                <Link href="/register" className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">Get Started</Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 w-full flex flex-col items-center px-4 md:px-6 pt-24">
-        {/* Hero Section */}
-        <section className="w-full max-w-4xl mx-auto py-24 px-4">
-          <div className="text-center space-y-6">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">
-              Build Your Perfect PC
-            </h1>
-            <p className="text-xl text-text-muted max-w-2xl mx-auto">
-              Create a custom PC with our easy-to-use builder and expert recommendations.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
-              <Link 
-                href="/builder" 
-                className="px-8 py-3.5 bg-accent hover:bg-accent/90 text-white font-medium rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-              >
-                Start Building
+                  Z
+                </motion.div>
+                <span className="font-display text-xl font-semibold text-text-primary">ZenPC</span>
               </Link>
-              <Link 
-                href="/builder?tab=guide" 
-                className="px-8 py-3.5 border border-border/20 text-text-primary font-medium rounded-lg transition-all duration-300 hover:bg-surface-2/50"
-              >
-                View Guide
-              </Link>
-            </div>
-          </div>
-        </section>
 
-        {/* How It Works */}
-        <section id="how-it-works" className={`w-full max-w-6xl mx-auto flex flex-col items-center gap-12 my-20 transition-all duration-1000 ${sectionVisibility['how-it-works'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <div className="text-center space-y-3">
-            <h2 className="font-display text-4xl font-semibold text-text-primary">How It Works</h2>
-            <p className="text-text-muted text-lg">Three simple steps to your perfect build</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-            <div className="text-center space-y-4 p-8 rounded-lg border border-border/10 hover:border-border/30 transition-colors">
-              <div className="h-16 w-16 mx-auto flex items-center justify-center rounded-xl bg-accent/10">
-                <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="font-semibold text-xl">Select Components</div>
-              <p className="text-text-muted">Choose from our curated selection of compatible components</p>
-            </div>
-            <div className="text-center space-y-4 p-8 rounded-lg border border-border/10 hover:border-border/30 transition-colors">
-              <div className="h-16 w-16 mx-auto flex items-center justify-center rounded-xl bg-accent/10">
-                <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="font-semibold text-xl">Check Compatibility</div>
-              <p className="text-text-muted">Real-time validation ensures all parts work together</p>
-            </div>
-            <div className="text-center space-y-4 p-8 rounded-lg border border-border/10 hover:border-border/30 transition-colors">
-              <div className="h-16 w-16 mx-auto flex items-center justify-center rounded-xl bg-accent/10">
-                <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div className="font-semibold text-xl">Build & Order</div>
-              <p className="text-text-muted">Get your complete build list and order with confidence</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Minimal Features */}
-        <section id="features" className={`w-full max-w-7xl mx-auto my-28`}>
-          <div className="absolute left-0 right-0 mx-auto h-32 bg-gradient-to-b from-accent/10 to-transparent rounded-t-3xl -z-10" />
-          <div className="text-center space-y-4 mb-16">
-            <h2 className="font-display text-4xl font-bold text-text-primary">Powerful Features</h2>
-            <p className="text-text-muted text-lg max-w-2xl mx-auto">Everything you need to build the perfect PC with confidence</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-xl mb-1">Real-time Pricing</h3>
-                </div>
-              </div>
-              <p className="text-text-muted leading-relaxed">Live price updates from multiple retailers ensure you always get the best deal available.</p>
-            </div>
-            
-            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-xl mb-1">Smart Compatibility</h3>
-                </div>
-              </div>
-              <p className="text-text-muted leading-relaxed">Advanced algorithms check for compatibility issues before you make any purchase decisions.</p>
-            </div>
-            
-            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-xl mb-1">Build History</h3>
-                </div>
-              </div>
-              <p className="text-text-muted leading-relaxed">Track and compare all your builds with detailed performance metrics and cost analysis.</p>
-            </div>
-            
-            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-xl mb-1">Budget Tracking</h3>
-                </div>
-              </div>
-              <p className="text-text-muted leading-relaxed">Stay within budget with real-time cost calculations and intelligent spending alerts.</p>
-            </div>
-            
-            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-xl mb-1">Build Guides</h3>
-                </div>
-              </div>
-              <p className="text-text-muted leading-relaxed">Step-by-step guides for assembly, cable management, and performance optimization.</p>
-            </div>
-            
-            <div className="card p-8 space-y-4 group hover:scale-[1.04] hover:shadow-2xl hover:bg-surface-2/80 transition-all duration-300 cursor-pointer">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-xl mb-1">Community Builds</h3>
-                </div>
-              </div>
-              <p className="text-text-muted leading-relaxed">Browse and learn from amazing builds shared by our passionate community.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Minimal CTA Section */}
-        <section className="w-full max-w-5xl mx-auto my-24">
-          <div className="absolute left-0 right-0 mx-auto h-24 bg-gradient-to-t from-accent/10 to-transparent rounded-b-3xl -z-10" />
-          <div className="p-12 rounded-lg border border-border/20 bg-surface-1/30 text-center">
-            <h2 className="font-display text-3xl font-semibold text-text-primary mb-4">
-              Ready to Build Your Dream PC?
-            </h2>
-            <p className="text-text-muted text-lg mb-8">
-              Join thousands of PC builders who trust ZenPC for their custom builds.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/builder" className="px-8 py-3 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
-                Start Building
-              </Link>
-              <Link href="/builder?tab=guide" className="px-8 py-3 rounded-lg border border-border text-text-primary font-medium hover:border-text-primary transition-all duration-200 hover:bg-surface-2/30">
-                View Guide
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Modern Footer */}
-      <footer className="w-full bg-surface-2/50 border-t border-border/10 mt-24">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Brand Column */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center">
-                  <span className="font-display font-bold text-white">Z</span>
-                </div>
-                <h3 className="font-display text-2xl font-bold bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">ZenPC</h3>
-              </div>
-              <p className="text-text-muted text-sm leading-relaxed">
-                Premium PC builder with real-time compatibility checking and expert-curated components.
-              </p>
-              <div className="flex items-center gap-4 pt-2">
-                {['M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12s4.477 10 10 10 10-4.477 10-10zm-6.5 0l-5-5 1.5-1.5 7 7-7 7-1.5-1.5 5-5z', 
-                   'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v2h-2v-2zm0-12h2v9h-2V5z',
-                   'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z'
-                ].map((d, i) => (
-                  <div key={i} className="p-2 rounded-lg hover:bg-surface-3/50 transition-all duration-200 cursor-pointer hover:scale-110">
-                    <svg className="w-5 h-5 text-text-muted hover:text-accent transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={d} />
-                    </svg>
-                  </div>
+              <nav className="hidden md:flex items-center gap-8">
+                {['Features', 'How It Works', 'Pricing'].map((item) => (
+                  <Link
+                    key={item}
+                    href={`#${item.toLowerCase().replace(' ', '-')}`}
+                    className="text-sm text-text-muted hover:text-text-primary transition-colors duration-200 relative group"
+                  >
+                    {item}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent group-hover:w-full transition-all duration-300" />
+                  </Link>
                 ))}
+              </nav>
+
+              <div className="flex items-center gap-3">
+                {loading ? (
+                  <div className="w-20 h-8 bg-surface-2/50 rounded-full animate-pulse" />
+                ) : user ? (
+                  <>
+                    <Link href="/builder" className="text-sm text-text-muted hover:text-text-primary transition-colors truncate max-w-32">
+                      {user.email}
+                    </Link>
+                    <motion.button
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setUser(null);
+                        window.location.href = '/';
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-text-muted hover:text-text-primary border border-border/20 rounded-lg hover:bg-surface-2/50 transition-all"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Sign Out
+                    </motion.button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="text-sm text-text-muted hover:text-text-primary transition-colors">
+                      Log In
+                    </Link>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Link
+                        href="/register"
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent to-purple-600 text-white text-sm font-medium shadow-lg shadow-accent/25 hover:shadow-xl hover:shadow-accent/30 transition-all"
+                      >
+                        Get Started
+                      </Link>
+                    </motion.div>
+                  </>
+                )}
               </div>
             </div>
+          </div>
+        </motion.header>
 
-            {/* Navigation Columns */}
-            {[
-              {
-                title: 'Product',
-                links: [
-                  { name: 'PC Builder', href: '/builder' },
-                  { name: 'Build Guide', href: '/builder?tab=guide' },
-                  { name: 'Community', href: '/community' },
-                  { name: 'Pricing', href: '/pricing' },
-                  { name: 'Updates', href: '/updates' }
-                ]
-              },
-              {
-                title: 'Company',
-                links: [
-                  { name: 'About Us', href: '/about' },
-                  { name: 'Careers', href: '/careers' },
-                  { name: 'Blog', href: '/blog' },
-                  { name: 'Press', href: '/press' },
-                  { name: 'Partners', href: '/partners' }
-                ]
-              },
-              {
-                title: 'Support',
-                links: [
-                  { name: 'Help Center', href: '/help' },
-                  { name: 'Contact Us', href: '/contact' },
-                  { name: 'Documentation', href: '/docs' },
-                  { name: 'Status', href: '/status' },
-                  { name: 'Security', href: '/security' }
-                ]
-              }
-            ].map((section, idx) => (
-              <div key={idx} className="space-y-4">
-                <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider">
-                  {section.title}
-                </h3>
-                <nav className="space-y-3">
-                  {section.links.map((link, linkIdx) => (
+        <main className="flex-1 w-full">
+          {/* Hero Section */}
+          <motion.section
+            className="relative min-h-screen flex items-center justify-center px-4"
+            style={{ opacity: heroOpacity, scale: heroScale }}
+          >
+            <div className="max-w-5xl mx-auto text-center pt-20">
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={staggerContainer}
+                className="space-y-8"
+              >
+                {/* Badge */}
+                <motion.div variants={fadeInUp} className="flex justify-center">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-medium">
+                    <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                    New: AI-Powered Build Recommendations
+                  </span>
+                </motion.div>
+
+                {/* Title */}
+                <motion.h1
+                  variants={fadeInUp}
+                  className="text-5xl md:text-7xl lg:text-8xl font-display font-bold leading-tight"
+                >
+                  <span className="text-text-primary">Build Your</span>
+                  <br />
+                  <span className="bg-gradient-to-r from-accent via-purple-500 to-cyan-400 bg-clip-text text-transparent">
+                    Perfect PC
+                  </span>
+                </motion.h1>
+
+                {/* Subtitle */}
+                <motion.p
+                  variants={fadeInUp}
+                  className="text-xl md:text-2xl text-text-muted max-w-2xl mx-auto leading-relaxed"
+                >
+                  Create a custom PC with our intelligent builder, real-time compatibility checking, and expert recommendations.
+                </motion.p>
+
+                {/* CTA Buttons */}
+                <motion.div
+                  variants={fadeInUp}
+                  className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
+                >
+                  <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
                     <Link
-                      key={linkIdx}
-                      href={link.href}
-                      className="text-sm text-text-muted hover:text-accent transition-all duration-200 flex items-center group"
+                      href="/builder"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-accent to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 transition-all"
                     >
-                      <span className="h-0.5 w-0 bg-accent group-hover:w-3 mr-0 group-hover:mr-2 transition-all duration-300"></span>
-                      {link.name}
+                      Start Building
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      href="/builder?tab=guide"
+                      className="inline-flex items-center gap-2 px-8 py-4 border border-border/30 text-text-primary font-semibold rounded-xl hover:bg-surface-1/50 hover:border-border/50 transition-all backdrop-blur-sm"
+                    >
+                      View Guide
+                    </Link>
+                  </motion.div>
+                </motion.div>
+
+                {/* Stats */}
+                <motion.div
+                  variants={fadeInUp}
+                  className="flex flex-wrap justify-center gap-8 pt-12"
+                >
+                  {[
+                    { value: '10K+', label: 'Builds Created' },
+                    { value: '500+', label: 'Components' },
+                    { value: '99%', label: 'Compatibility' },
+                  ].map((stat) => (
+                    <div key={stat.label} className="text-center">
+                      <div className="text-3xl font-bold text-text-primary">{stat.value}</div>
+                      <div className="text-sm text-text-muted">{stat.label}</div>
+                    </div>
+                  ))}
+                </motion.div>
+              </motion.div>
+
+              {/* Scroll indicator */}
+              <motion.div
+                className="absolute bottom-12 left-1/2 -translate-x-1/2"
+                animate={{ y: [0, 10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <div className="w-6 h-10 rounded-full border-2 border-border/30 flex items-start justify-center p-2">
+                  <motion.div
+                    className="w-1 h-2 bg-accent rounded-full"
+                    animate={{ y: [0, 12, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </motion.section>
+
+          {/* How It Works */}
+          <section id="how-it-works" className="py-32 px-4">
+            <div className="max-w-6xl mx-auto">
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={staggerContainer}
+                className="text-center mb-16"
+              >
+                <motion.span variants={fadeInUp} className="text-accent font-medium text-sm uppercase tracking-wider">
+                  Simple Process
+                </motion.span>
+                <motion.h2 variants={fadeInUp} className="font-display text-4xl md:text-5xl font-bold text-text-primary mt-4">
+                  How It Works
+                </motion.h2>
+                <motion.p variants={fadeInUp} className="text-text-muted text-lg mt-4 max-w-2xl mx-auto">
+                  Three simple steps to your perfect build
+                </motion.p>
+              </motion.div>
+
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={staggerContainer}
+                className="grid grid-cols-1 md:grid-cols-3 gap-8"
+              >
+                {steps.map((step, index) => (
+                  <motion.div
+                    key={step.title}
+                    variants={scaleIn}
+                    className="relative group"
+                  >
+                    {/* Connector line */}
+                    {index < steps.length - 1 && (
+                      <div className="hidden md:block absolute top-16 left-1/2 w-full h-0.5 bg-gradient-to-r from-accent/50 to-transparent" />
+                    )}
+
+                    <motion.div
+                      className="relative p-8 rounded-2xl bg-surface-1/40 backdrop-blur-xl border border-border/10 text-center transition-all hover:border-accent/30"
+                      whileHover={{ y: -8, scale: 1.02 }}
+                    >
+                      {/* Number badge */}
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-accent text-white text-xs font-bold rounded-full">
+                        {step.number}
+                      </div>
+
+                      <div className="h-16 w-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-accent/20 to-purple-600/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <step.icon className="w-8 h-8 text-accent" />
+                      </div>
+
+                      <h3 className="font-semibold text-xl text-text-primary mb-3">{step.title}</h3>
+                      <p className="text-text-muted">{step.description}</p>
+                    </motion.div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          </section>
+
+          {/* Features Grid */}
+          <section id="features" className="py-32 px-4">
+            <div className="max-w-7xl mx-auto">
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={staggerContainer}
+                className="text-center mb-16"
+              >
+                <motion.span variants={fadeInUp} className="text-accent font-medium text-sm uppercase tracking-wider">
+                  Everything You Need
+                </motion.span>
+                <motion.h2 variants={fadeInUp} className="font-display text-4xl md:text-5xl font-bold text-text-primary mt-4">
+                  Powerful Features
+                </motion.h2>
+                <motion.p variants={fadeInUp} className="text-text-muted text-lg mt-4 max-w-2xl mx-auto">
+                  Everything you need to build the perfect PC with confidence
+                </motion.p>
+              </motion.div>
+
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={staggerContainer}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                {features.map((feature) => (
+                  <motion.div
+                    key={feature.title}
+                    variants={scaleIn}
+                    className="group cursor-pointer"
+                  >
+                    <motion.div
+                      className="h-full p-8 rounded-2xl bg-surface-1/40 backdrop-blur-xl border border-border/10 transition-all hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5"
+                      whileHover={{ y: -5, scale: 1.02 }}
+                    >
+                      <div className={`h-14 w-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                        <feature.icon className={`w-7 h-7 ${feature.iconColor}`} />
+                      </div>
+                      <h3 className="font-semibold text-xl text-text-primary mb-3">{feature.title}</h3>
+                      <p className="text-text-muted leading-relaxed">{feature.description}</p>
+                    </motion.div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section className="py-32 px-4">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={fadeInUp}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="relative p-12 md:p-16 rounded-3xl overflow-hidden">
+                {/* Background gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-purple-600/10 to-cyan-600/20 backdrop-blur-xl" />
+                <div className="absolute inset-0 bg-surface-1/30" />
+                <div className="absolute inset-0 border border-border/20 rounded-3xl" />
+
+                {/* Floating shapes */}
+                <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-accent/20 blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-purple-600/20 blur-3xl" />
+
+                <div className="relative text-center">
+                  <motion.h2
+                    className="font-display text-3xl md:text-5xl font-bold text-text-primary mb-6"
+                    variants={fadeInUp}
+                  >
+                    Ready to Build Your
+                    <br />
+                    <span className="bg-gradient-to-r from-accent to-purple-500 bg-clip-text text-transparent">
+                      Dream PC?
+                    </span>
+                  </motion.h2>
+
+                  <motion.p
+                    className="text-text-muted text-lg mb-10 max-w-xl mx-auto"
+                    variants={fadeInUp}
+                  >
+                    Join thousands of PC builders who trust ZenPC for their custom builds.
+                  </motion.p>
+
+                  <motion.div
+                    className="flex flex-col sm:flex-row gap-4 justify-center"
+                    variants={fadeInUp}
+                  >
+                    <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
+                      <Link
+                        href="/builder"
+                        className="inline-flex items-center gap-2 px-8 py-4 bg-white text-bg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                      >
+                        Start Building
+                        <ArrowRight className="w-5 h-5" />
+                      </Link>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+                      <Link
+                        href="/builder?tab=guide"
+                        className="inline-flex items-center gap-2 px-8 py-4 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/10 transition-all"
+                      >
+                        View Guide
+                      </Link>
+                    </motion.div>
+                  </motion.div>
+                </div>
+              </div>
+            </motion.div>
+          </section>
+        </main>
+
+        {/* Footer */}
+        <footer className="relative z-10 w-full bg-surface-1/50 backdrop-blur-xl border-t border-border/10">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+              {/* Brand */}
+              <div className="space-y-6">
+                <Link href="/" className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent to-purple-600 flex items-center justify-center">
+                    <span className="font-display font-bold text-white">Z</span>
+                  </div>
+                  <span className="font-display text-2xl font-bold bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">
+                    ZenPC
+                  </span>
+                </Link>
+                <p className="text-text-muted text-sm leading-relaxed">
+                  Premium PC builder with real-time compatibility checking and expert-curated components.
+                </p>
+              </div>
+
+              {/* Links */}
+              {[
+                {
+                  title: 'Product', links: [
+                    { name: 'PC Builder', href: '/builder' },
+                    { name: 'Build Guide', href: '/builder?tab=guide' },
+                    { name: 'Community', href: '/community' },
+                    { name: 'Pricing', href: '/pricing' },
+                  ]
+                },
+                {
+                  title: 'Company', links: [
+                    { name: 'About Us', href: '/about' },
+                    { name: 'Careers', href: '/careers' },
+                    { name: 'Blog', href: '/blog' },
+                    { name: 'Press', href: '/press' },
+                  ]
+                },
+                {
+                  title: 'Support', links: [
+                    { name: 'Help Center', href: '/help' },
+                    { name: 'Contact Us', href: '/contact' },
+                    { name: 'Documentation', href: '/docs' },
+                    { name: 'Status', href: '/status' },
+                  ]
+                },
+              ].map((section) => (
+                <div key={section.title} className="space-y-4">
+                  <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider">
+                    {section.title}
+                  </h3>
+                  <nav className="space-y-3">
+                    {section.links.map((link) => (
+                      <Link
+                        key={link.name}
+                        href={link.href}
+                        className="text-sm text-text-muted hover:text-accent transition-colors flex items-center group"
+                      >
+                        <span className="h-0.5 w-0 bg-accent group-hover:w-3 mr-0 group-hover:mr-2 transition-all duration-300" />
+                        {link.name}
+                      </Link>
+                    ))}
+                  </nav>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-border/10 mt-12 pt-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+                <div className="flex items-center gap-2 text-text-muted/80">
+                  <span>© {new Date().getFullYear()} ZenPC</span>
+                  <span className="text-border">•</span>
+                  <span>All rights reserved</span>
+                </div>
+                <div className="flex items-center gap-6">
+                  {['Privacy Policy', 'Terms of Service', 'Cookies'].map((item) => (
+                    <Link
+                      key={item}
+                      href={`/${item.toLowerCase().replace(' ', '-')}`}
+                      className="text-text-muted/80 hover:text-accent transition-colors"
+                    >
+                      {item}
                     </Link>
                   ))}
-                </nav>
+                </div>
               </div>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-border/10 my-10"></div>
-
-          {/* Bottom Bar */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
-            <div className="flex items-center gap-2 text-text-muted/80">
-              <span>© {new Date().getFullYear()} ZenPC</span>
-              <span className="text-border">•</span>
-              <span>All rights reserved</span>
-              <span className="text-border">•</span>
-              <span>v1.0.0</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <Link href="/privacy" className="text-text-muted/80 hover:text-accent transition-colors duration-200">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="text-text-muted/80 hover:text-accent transition-colors duration-200">
-                Terms of Service
-              </Link>
-              <Link href="/cookies" className="text-text-muted/80 hover:text-accent transition-colors duration-200">
-                Cookies
-              </Link>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
 
-      {/* Back to Top Button */}
-      {scrollY > 400 && (
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-8 right-8 z-50 p-4 rounded-full bg-accent text-white shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 group"
-        >
-          <svg className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </button>
-      )}
+        {/* Back to top */}
+        <BackToTop />
       </div>
     </div>
   );
 }
 
+// Back to top button component
+function BackToTop() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setShow(window.scrollY > 400);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-8 right-8 z-50 p-4 rounded-full bg-accent text-white shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 transition-all"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <ChevronUp className="w-6 h-6" />
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+}

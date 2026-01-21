@@ -1,329 +1,154 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import PageLayout from '@/components/layouts/PageLayout';
+import { Code, Zap, Database, Shield, ArrowRight, Book, FileCode, Terminal } from 'lucide-react';
+
+const docSections = [
+  {
+    icon: Book,
+    title: 'Introduction',
+    description: 'Get started with ZenPC and understand the basics',
+    href: '/docs/intro',
+    color: 'from-blue-500/20 to-cyan-600/20',
+    iconColor: 'text-blue-400',
+  },
+  {
+    icon: FileCode,
+    title: 'API Reference',
+    description: 'Detailed documentation of our REST API endpoints',
+    href: '/docs/api',
+    color: 'from-green-500/20 to-emerald-600/20',
+    iconColor: 'text-green-400',
+  },
+  {
+    icon: Terminal,
+    title: 'CLI Tools',
+    description: 'Command-line interface for power users',
+    href: '/docs/cli',
+    color: 'from-purple-500/20 to-violet-600/20',
+    iconColor: 'text-purple-400',
+  },
+  {
+    icon: Database,
+    title: 'Data Models',
+    description: 'Understanding our component database structure',
+    href: '/docs/data',
+    color: 'from-amber-500/20 to-orange-600/20',
+    iconColor: 'text-amber-400',
+  },
+];
+
+const quickLinks = [
+  { title: 'Quick Start', href: '/docs/quickstart', icon: Zap },
+  { title: 'Authentication', href: '/docs/auth', icon: Shield },
+  { title: 'Components API', href: '/docs/api/components', icon: Code },
+  { title: 'Builds API', href: '/docs/api/builds', icon: Database },
+];
 
 export default function DocsPage() {
-  const [smoothPosition, setSmoothPosition] = useState({ x: 0, y: 0 });
-  const [openSection, setOpenSection] = useState<string | null>('getting-started');
-  const rafRef = useRef<number>();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-    let targetX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
-    let targetY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isClient) return;
-      targetX = e.clientX;
-      targetY = e.clientY;
-    };
-
-    const animate = () => {
-      setSmoothPosition(prev => ({
-        x: prev.x + (targetX - prev.x) * 0.1,
-        y: prev.y + (targetY - prev.y) * 0.1
-      }));
-      rafRef.current = requestAnimationFrame(animate);
-    };
-
-    rafRef.current = requestAnimationFrame(animate);
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [isClient]);
-
-  const sections = [
-    {
-      id: 'getting-started',
-      title: 'Getting Started',
-      content: (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Welcome to ZenPC</h3>
-            <p className="text-text-muted leading-relaxed">
-              ZenPC is a comprehensive PC building platform that helps you create, validate, and optimize custom PC builds. This documentation will help you understand all features and get the most out of the platform.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Quick Start</h3>
-            <ol className="list-decimal list-inside space-y-2 text-text-muted ml-4">
-              <li>Create a free account or start building without one</li>
-              <li>Navigate to the Builder from the homepage</li>
-              <li>Select parts from each category (CPU, GPU, Motherboard, etc.)</li>
-              <li>Review compatibility checks and build health analysis</li>
-              <li>Save your build and export when ready</li>
-            </ol>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: 'builder',
-      title: 'Using the Builder',
-      content: (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Part Selection</h3>
-            <p className="text-text-muted leading-relaxed mb-3">
-              The builder organizes components into categories. Select one part from each category to build your PC. As you select parts, ZenPC automatically:
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-text-muted ml-4">
-              <li>Checks compatibility between selected components</li>
-              <li>Calculates estimated power requirements</li>
-              <li>Updates total build cost in real-time</li>
-              <li>Provides build health analysis</li>
-              <li>Identifies potential bottlenecks</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Compatibility Checking</h3>
-            <p className="text-text-muted leading-relaxed">
-              Our compatibility system uses actual technical specifications to validate your build. Errors indicate critical incompatibilities that will prevent your build from working. Warnings suggest suboptimal configurations that may limit performance but won&apos;t prevent functionality.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Build Health</h3>
-            <p className="text-text-muted leading-relaxed">
-              Build Health evaluates your build across multiple dimensions: compatibility, power supply adequacy, performance balance, and upgrade flexibility. Each category receives a qualitative rating (Excellent, Good, Acceptable, Needs Attention) with detailed explanations.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Bottleneck Analysis</h3>
-            <p className="text-text-muted leading-relaxed">
-              The Bottleneck Analysis identifies potential performance limitations based on your component selection and use case. It provides educational insights—not fear-based warnings—to help you optimize your build.
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: 'specs',
-      title: 'Understanding Specifications',
-      content: (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Spec-Driven Architecture</h3>
-            <p className="text-text-muted leading-relaxed">
-              ZenPC uses a spec-driven architecture where all part specifications are defined in a centralized Spec Dictionary. This ensures consistency, accuracy, and automatic support for new parts and specifications.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Spec Groups</h3>
-            <p className="text-text-muted leading-relaxed mb-3">
-              Specifications are organized into logical groups:
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-text-muted ml-4">
-              <li><strong>Performance:</strong> Clock speeds, core counts, memory speeds</li>
-              <li><strong>Compatibility:</strong> Sockets, form factors, memory types</li>
-              <li><strong>Power:</strong> TDP, wattage, efficiency ratings</li>
-              <li><strong>Physical:</strong> Dimensions, weight, clearance</li>
-              <li><strong>Memory:</strong> Capacity, VRAM, storage size</li>
-              <li><strong>Connectivity:</strong> Ports, Wi-Fi, Bluetooth</li>
-              <li><strong>Features:</strong> RGB, modular design, cooling type</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Reading Specs</h3>
-            <p className="text-text-muted leading-relaxed">
-              Each specification includes a human-readable label, unit (if applicable), and description. High-importance specs are emphasized, while low-importance specs can be collapsed to reduce clutter.
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: 'compatibility',
-      title: 'Compatibility Rules',
-      content: (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">How Compatibility Works</h3>
-            <p className="text-text-muted leading-relaxed">
-              Compatibility rules are stored in our database and evaluated dynamically. Each rule specifies:
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-text-muted ml-4">
-              <li>Source and target component categories</li>
-              <li>Specification fields to compare</li>
-              <li>Comparison operator (equals, greater than, etc.)</li>
-              <li>Severity level (error, warning, info)</li>
-              <li>Human-readable message and explanation</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Rule Types</h3>
-            <p className="text-text-muted leading-relaxed mb-3">
-              <strong>Errors:</strong> Critical incompatibilities that will prevent your build from working (e.g., socket mismatches, physical clearance issues).
-            </p>
-            <p className="text-text-muted leading-relaxed mb-3">
-              <strong>Warnings:</strong> Suboptimal configurations that may limit performance but won&apos;t prevent functionality (e.g., RAM speed exceeding motherboard support, minimal PSU headroom).
-            </p>
-            <p className="text-text-muted leading-relaxed">
-              <strong>Info:</strong> Informational notes about your build (e.g., confirmed compatibility, upgrade flexibility).
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: 'build-health',
-      title: 'Build Health Analysis',
-      content: (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Overview</h3>
-            <p className="text-text-muted leading-relaxed">
-              Build Health provides a comprehensive evaluation of your build across multiple dimensions. It uses only actual specifications—no hardcoded assumptions—to provide accurate, educational feedback.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Health Categories</h3>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Compatibility</h4>
-                <p className="text-text-muted leading-relaxed">
-                  Evaluates whether all selected components are compatible with each other. Checks socket matches, physical clearances, memory type compatibility, and more.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Power Supply</h4>
-                <p className="text-text-muted leading-relaxed">
-                  Analyzes whether your PSU provides adequate power for all components, with appropriate headroom for stability and future upgrades.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Performance Balance</h4>
-                <p className="text-text-muted leading-relaxed">
-                  Assesses whether your components are well-matched for your intended use case, identifying potential imbalances between CPU and GPU, RAM adequacy, and storage performance.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2">Upgrade Flexibility</h4>
-                <p className="text-text-muted leading-relaxed">
-                  Evaluates how easy it will be to upgrade your build in the future, considering socket compatibility, PSU headroom, and case clearances.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: 'tips',
-      title: 'Best Practices',
-      content: (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Planning Your Build</h3>
-            <ul className="list-disc list-inside space-y-2 text-text-muted ml-4">
-              <li>Start with your use case (gaming, productivity, content creation) to guide component selection</li>
-              <li>Set a realistic budget and use the budget tracking feature</li>
-              <li>Consider future upgrade paths when selecting core components</li>
-              <li>Read compatibility warnings carefully—they often contain valuable insights</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Component Selection</h3>
-            <ul className="list-disc list-inside space-y-2 text-text-muted ml-4">
-              <li>Select CPU and motherboard first—they determine your platform</li>
-              <li>Choose RAM that matches your motherboard&apos;s supported type and speed</li>
-              <li>Ensure your case has adequate clearance for your GPU and CPU cooler</li>
-              <li>Leave 20-30% PSU headroom for stability and future upgrades</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-3 text-text-primary">Before Purchasing</h3>
-            <ul className="list-disc list-inside space-y-2 text-text-muted ml-4">
-              <li>Double-check compatibility with manufacturer documentation</li>
-              <li>Verify current pricing with retailers—prices change frequently</li>
-              <li>Review Build Health and Bottleneck Analysis for optimization opportunities</li>
-              <li>Export your build summary for reference</li>
-            </ul>
-          </div>
-        </div>
-      )
-    }
-  ];
-
   return (
-    <main className="min-h-dvh bg-bg text-text-primary relative overflow-hidden">
-      <div style={{
-        position: 'fixed',
-        width: '600px',
-        height: '600px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 70%)',
-        left: `${smoothPosition.x}px`,
-        top: `${smoothPosition.y}px`,
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-        zIndex: 0,
-        filter: 'blur(30px)',
-        willChange: 'transform',
-        transition: 'opacity 0.3s ease-out',
-        opacity: 1
-      }} />
-      
-      <div className="relative z-10 max-w-5xl mx-auto px-6 py-16">
-        <div className="mb-8">
-          <Link 
-            href="/" 
-            className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors duration-base ease-premium group"
-          >
-            <svg className="w-4 h-4 transition-transform duration-base ease-premium group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Home
-          </Link>
-        </div>
-
-        <div className="card p-8 md:p-12 mb-8">
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-accent to-purple-600 bg-clip-text text-transparent">
-            Documentation
-          </h1>
-          <p className="text-xl text-text-muted leading-relaxed">
-            Comprehensive guides and reference materials for using ZenPC effectively.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {sections.map((section) => (
-            <div key={section.id} className="card overflow-hidden">
-              <button
-                onClick={() => setOpenSection(openSection === section.id ? null : section.id)}
-                className="w-full p-6 text-left flex items-center justify-between hover:bg-surface-2/30 transition-colors"
+    <PageLayout
+      title="Documentation"
+      description="Everything you need to integrate with ZenPC and build amazing experiences"
+      maxWidth="6xl"
+    >
+      {/* Quick Links */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mb-16"
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {quickLinks.map((link, index) => (
+            <motion.div
+              key={link.title}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + index * 0.05 }}
+            >
+              <Link
+                href={link.href}
+                className="flex items-center gap-3 p-4 rounded-xl bg-surface-1/40 border border-border/10 hover:border-accent/30 transition-all group"
               >
-                <h2 className="text-2xl font-semibold text-text-primary">{section.title}</h2>
-                <svg
-                  className={`w-6 h-6 text-text-muted transition-transform ${openSection === section.id ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {openSection === section.id && (
-                <div className="px-6 pb-6 border-t border-border/10 pt-6">
-                  {section.content}
-                </div>
-              )}
-            </div>
+                <link.icon className="w-5 h-5 text-accent" />
+                <span className="text-text-primary font-medium group-hover:text-accent transition-colors">
+                  {link.title}
+                </span>
+              </Link>
+            </motion.div>
           ))}
         </div>
+      </motion.section>
 
-        <div className="card p-8 md:p-12 mt-12 bg-accent/5 border-accent/20">
-          <h2 className="text-2xl font-semibold mb-4 text-text-primary">Need More Help?</h2>
-          <p className="text-text-muted leading-relaxed mb-6">
-            Can&apos;t find what you&apos;re looking for? Check our <Link href="/help" className="text-accent hover:underline">Help Center</Link> or <Link href="/contact" className="text-accent hover:underline">contact support</Link>.
-          </p>
+      {/* Main Sections */}
+      <motion.section className="mb-16">
+        <h2 className="font-display text-2xl font-bold text-text-primary mb-8">
+          Explore Docs
+        </h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {docSections.map((section, index) => (
+            <motion.div
+              key={section.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + index * 0.1 }}
+            >
+              <Link
+                href={section.href}
+                className="block p-6 rounded-2xl bg-surface-1/40 border border-border/10 hover:border-accent/30 transition-all group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${section.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <section.icon className={`w-6 h-6 ${section.iconColor}`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg text-text-primary">{section.title}</h3>
+                      <ArrowRight className="w-5 h-5 text-text-muted/50 group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <p className="text-text-muted text-sm">{section.description}</p>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
         </div>
-      </div>
-    </main>
+      </motion.section>
+
+      {/* Code Example */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="p-8 rounded-2xl bg-surface-1/40 border border-border/10"
+      >
+        <h2 className="font-display text-xl font-bold text-text-primary mb-6">
+          Quick Example
+        </h2>
+        <div className="rounded-xl bg-[#1a1a2e] p-6 overflow-x-auto">
+          <pre className="text-sm">
+            <code className="text-green-400">
+              {`// Fetch compatible components
+const response = await fetch('https://api.zenpc.com/v1/components', {
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const components = await response.json();
+console.log(components);`}
+            </code>
+          </pre>
+        </div>
+        <p className="text-text-muted text-sm mt-4">
+          See the <Link href="/docs/api" className="text-accent hover:underline">API Reference</Link> for more examples.
+        </p>
+      </motion.section>
+    </PageLayout>
   );
 }

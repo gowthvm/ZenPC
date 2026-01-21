@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilderStore } from '@/store/builder';
 import { supabase } from '@/lib/supabaseClient';
 import { evaluateCompatibility } from '@/lib/compatibilityEngine';
 import CompatibilityIssueDisplay from './CompatibilityIssueDisplay';
+import { SkeletonPartCard } from '@/components/ui/LoadingSkeleton';
+import { Progress } from '@/components/ui/Progress';
 import type { CompatibilityIssue } from '@/lib/compatibilityEngine';
 
 const BUILD_ORDER = [
@@ -45,11 +48,11 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
           .order('name', { ascending: true });
 
         if (error) {
-        console.error('Error loading parts:', error);
-        console.log('Active category:', activeCategory);
-      } else {
-        console.log(`Loaded ${data?.length || 0} parts for category: ${activeCategory}`);
-      }
+          console.error('Error loading parts:', error);
+          console.log('Active category:', activeCategory);
+        } else {
+          console.log(`Loaded ${data?.length || 0} parts for category: ${activeCategory}`);
+        }
         setParts(prev => ({
           ...prev,
           [activeCategory]: data || [],
@@ -90,7 +93,7 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
   const filteredParts = useMemo(() => {
     const categoryParts = parts[activeCategory] || [];
     if (!searchQuery) return categoryParts;
-    
+
     return categoryParts.filter(part =>
       part.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       part.brand?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -124,36 +127,41 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
           {/* Progress */}
           <div className="p-4 rounded-lg bg-surface-1/55 backdrop-blur-glass border border-border/10 hover:border-accent/20 transition-all duration-200 ease-premium shadow-glass">
             <p className="text-sm font-medium text-text-muted mb-3">Build Progress</p>
-            <div className="bg-surface-2/50 rounded-full h-2 overflow-hidden mb-2">
-              <div
-                className="h-full bg-gradient-to-r from-accent to-purple-600 transition-all duration-300 ease-premium"
-                style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
-              />
-            </div>
-            <p className="text-xs text-text-muted">
+            <Progress
+              value={completedSteps}
+              max={totalSteps}
+              variant="gradient"
+              size="md"
+              animated
+            />
+            <p className="text-xs text-text-muted mt-2">
               {completedSteps} of {totalSteps} components selected
             </p>
           </div>
 
           {/* Category List */}
           <div className="space-y-2">
-            {BUILD_ORDER.map((category) => {
+            {BUILD_ORDER.map((category, index) => {
               const isSelected = activeCategory === category.key;
               const hasSelected = !!builderStore.selected[category.key];
 
               return (
-                <button
+                <motion.button
                   key={category.key}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.3 }}
                   onClick={() => setActiveCategory(category.key)}
                   className={`
                     w-full px-4 py-3 rounded-lg text-left transition-all duration-200 ease-premium
                     flex items-center justify-between gap-3
-                    ${
-                      isSelected
-                        ? 'bg-accent/15 border border-accent/30 shadow-md'
-                        : 'bg-surface-1/55 backdrop-blur-glass border border-border/10 hover:border-border/30 hover:bg-surface-1/75 shadow-glass'
+                    ${isSelected
+                      ? 'bg-accent/15 border border-accent/30 shadow-md shadow-accent/10'
+                      : 'bg-surface-1/55 backdrop-blur-glass border border-border/10 hover:border-border/30 hover:bg-surface-1/75 shadow-glass'
                     }
                   `}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{category.icon}</span>
@@ -161,12 +169,19 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
                       {category.label}
                     </span>
                   </div>
-                  {hasSelected && (
-                    <span className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-300">
-                      ✓
-                    </span>
-                  )}
-                </button>
+                  <AnimatePresence>
+                    {hasSelected && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-300 border border-green-500/30"
+                      >
+                        ✓
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
               );
             })}
           </div>
@@ -196,47 +211,74 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
             {/* Part List */}
             <div className="space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-surface-3/30">
               {loading ? (
-                <div className="text-center py-8 text-text-muted">
-                  <p>Loading parts...</p>
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <SkeletonPartCard key={i} />
+                  ))}
                 </div>
               ) : filteredParts.length === 0 ? (
-                <div className="text-center py-8 text-text-muted">
-                  <p>No parts found</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-8"
+                >
+                  <div className="empty-state-icon mx-auto mb-3">
+                    <span className="text-2xl">🔍</span>
+                  </div>
+                  <p className="text-text-muted text-sm">No parts found</p>
+                  <p className="text-text-muted/50 text-xs mt-1">Try adjusting your search</p>
+                </motion.div>
               ) : (
-                filteredParts.map((part) => (
-                  <button
-                    key={part.id}
-                    onClick={() => handleSelectPart(part)}
-                    className={`
-                      w-full p-3 rounded-lg border text-left transition-all duration-200 ease-premium
-                      ${
-                        selectedPart?.id === part.id
-                          ? 'bg-accent/15 border-accent/30 shadow-md'
+                <AnimatePresence mode="popLayout">
+                  {filteredParts.map((part, index) => (
+                    <motion.button
+                      key={part.id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: index * 0.03, duration: 0.2 }}
+                      onClick={() => handleSelectPart(part)}
+                      className={`
+                        w-full p-3 rounded-lg border text-left transition-all duration-200 ease-premium
+                        ${selectedPart?.id === part.id
+                          ? 'bg-accent/15 border-accent/30 shadow-md shadow-accent/10'
                           : 'bg-surface-1/55 backdrop-blur-glass border-border/10 hover:border-accent/30 hover:bg-surface-1/75 shadow-glass'
-                      }
-                    `}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-text-primary truncate">
-                          {part.name}
-                        </p>
-                        {part.brand && (
-                          <p className="text-xs text-text-muted mt-1">{part.brand}</p>
+                        }
+                      `}
+                      whileHover={{ scale: 1.01, x: 4 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-text-primary truncate">
+                            {part.name}
+                          </p>
+                          {part.brand && (
+                            <p className="text-xs text-text-muted mt-1">{part.brand}</p>
+                          )}
+                        </div>
+                        {part.price && (
+                          <p className="font-medium text-sm text-accent flex-shrink-0">
+                            ${part.price}
+                          </p>
                         )}
                       </div>
-                      {part.price && (
-                        <p className="font-medium text-sm text-accent flex-shrink-0">
-                          ${part.price}
-                        </p>
-                      )}
-                    </div>
-                    {selectedPart?.id === part.id && (
-                      <div className="text-xs text-green-300 mt-2">✓ Selected</div>
-                    )}
-                  </button>
-                ))
+                      <AnimatePresence>
+                        {selectedPart?.id === part.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="text-xs text-green-300 mt-2 flex items-center gap-1"
+                          >
+                            <span>✓</span> Selected
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.button>
+                  ))}
+                </AnimatePresence>
               )}
             </div>
           </div>
@@ -255,7 +297,7 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
                   Compatibility Check ({compatibilityIssues.length} issue{compatibilityIssues.length !== 1 ? 's' : ''})
                 </h3>
               </div>
-              <CompatibilityIssueDisplay 
+              <CompatibilityIssueDisplay
                 issues={compatibilityIssues}
                 compact={false}
                 expandedByDefault={true}
@@ -351,10 +393,9 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
               disabled={!saveName.trim() || compatibilityIssues.some(i => i.severity === 'error')}
               className={`
                 w-full px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ease-premium
-                ${
-                  saveName.trim() && !compatibilityIssues.some(i => i.severity === 'error')
-                    ? 'bg-gradient-to-r from-accent to-purple-600 text-white hover:shadow-lg hover:shadow-accent/20 active:scale-95'
-                    : 'bg-surface-2/30 text-text-muted/50 cursor-not-allowed'
+                ${saveName.trim() && !compatibilityIssues.some(i => i.severity === 'error')
+                  ? 'bg-gradient-to-r from-accent to-purple-600 text-white hover:shadow-lg hover:shadow-accent/20 active:scale-95'
+                  : 'bg-surface-2/30 text-text-muted/50 cursor-not-allowed'
                 }
               `}
             >
