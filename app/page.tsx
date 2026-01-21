@@ -5,6 +5,7 @@ import { Button } from './components/ui/button';
 import { Divider } from './components/ui/divider';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import Aurora from '@/components/Aurora';
 
 export default function Page() {
   const [scrollY, setScrollY] = useState(0);
@@ -95,6 +96,19 @@ export default function Page() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg text-text-primary relative overflow-hidden">
+      {/* Aurora Background */}
+      <div className="fixed inset-0 z-0 will-change-transform" style={{ perspective: '1000px' }}>
+        <Aurora
+          colorStops={["#ffffff", "#594a91", "#ffffff"]}
+          blend={0.4}
+          amplitude={0.8}
+          speed={0.8}
+        />
+      </div>
+
+      {/* Optional overlay for better text readability */}
+      <div className="fixed inset-0 z-5 bg-gradient-to-b from-transparent via-bg/20 to-bg/40 pointer-events-none" />
+
       {/* Purple cursor effect */}
       <div style={{
         position: 'fixed',
@@ -114,7 +128,7 @@ export default function Page() {
       }} />
       
       {/* Content wrapper */}
-      <div className="relative">
+      <div className="relative z-20">
       {/* Minimal Header */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full px-6 pt-6 pb-4 flex items-center justify-between gap-8 bg-surface-1/20 backdrop-blur-glass border-b border-border/10 shadow-glass transition-all duration-300">
         <div className="max-w-6xl mx-auto w-full flex items-center justify-between gap-8">

@@ -84,6 +84,7 @@ const config: Config = {
         '.gradient-radial': {
           background: 'radial-gradient(circle at center, var(--tw-gradient-from) 0%, var(--tw-gradient-to) 70%)',
         },
+        '.z-5': { zIndex: '5' },
       };
       addUtilities(newUtilities, ['responsive', 'hover']);
     },
