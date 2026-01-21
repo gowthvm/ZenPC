@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-base ease-premium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:opacity-50 active:scale-95',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-base ease-premium focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -17,8 +17,8 @@ const buttonVariants = cva(
         outline: 'btn-outline',
         ghost: 'btn-ghost',
         glow: 'btn-glow',
-        destructive: 'bg-red-500/90 text-white hover:bg-red-500 shadow-lg hover:shadow-red-500/25',
-        success: 'bg-emerald-500/90 text-white hover:bg-emerald-500 shadow-lg hover:shadow-emerald-500/25',
+        destructive: 'bg-red-500/90 text-white hover:bg-red-500 shadow-subtle hover:shadow-elevated hover:-translate-y-px',
+        success: 'bg-emerald-500/90 text-white hover:bg-emerald-500 shadow-subtle hover:shadow-elevated hover:-translate-y-px',
         link: 'text-accent underline-offset-4 hover:underline p-0 h-auto',
       },
       size: {
@@ -114,7 +114,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           damping: 15,
           mass: 0.1,
         }}
-        whileTap={{ scale: 0.95 }}
+        whileTap={{ scale: 0.98 }}
         {...props}
       >
         {loading && (

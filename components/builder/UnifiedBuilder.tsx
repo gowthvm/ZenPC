@@ -301,20 +301,8 @@ export default function UnifiedBuilder() {
 
   return (
     <div className="flex h-dvh bg-bg text-text-primary overflow-hidden relative">
-      {/* Ambient cursor glow effect */}
-      <CursorGlow color="rgb(99, 112, 241)" size={500} blur={60} opacity={0.2} />
-
-      {/* Morphing background shapes */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div
-          className="morph-shape absolute -top-32 -right-32 w-96 h-96 bg-accent/10"
-          style={{ animationDelay: '0s' }}
-        />
-        <div
-          className="morph-shape absolute -bottom-32 -left-32 w-80 h-80 bg-premium-purple/10"
-          style={{ animationDelay: '-4s' }}
-        />
-      </div>
+      {/* Ambient cursor glow effect (subtle) */}
+      <CursorGlow color="rgb(100, 108, 225)" size={400} blur={80} opacity={0.1} />
 
       {/* Sidebar */}
       <BuilderSidebar
@@ -331,7 +319,7 @@ export default function UnifiedBuilder() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden flex flex-col relative z-10">
         {/* Top Action Bar */}
-        <div className="border-b border-border/10 bg-surface-1/30 backdrop-blur-xl px-6 py-5">
+        <div className="border-b border-border/8 bg-surface-1/20 backdrop-blur-xl px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display text-xl font-semibold text-text-primary flex items-center gap-2">
@@ -365,10 +353,10 @@ export default function UnifiedBuilder() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeMode}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
               >
                 {renderActivePanel()}
               </motion.div>

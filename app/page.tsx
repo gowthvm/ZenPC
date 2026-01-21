@@ -6,7 +6,6 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { supabase } from '@/lib/supabaseClient';
 import Aurora from '@/components/Aurora';
 import { CursorGlow } from '@/components/effects/MagneticElement';
-import { Particles } from '@/components/effects/Particles';
 import {
   Zap, Shield, BookOpen, Wallet, Users, Lightbulb,
   ArrowRight, ChevronUp, Cpu, Monitor, HardDrive
@@ -142,24 +141,8 @@ export default function Page() {
         />
       </div>
 
-      {/* Gradient overlay */}
-      <div className="fixed inset-0 z-[1] bg-gradient-to-b from-transparent via-bg/20 to-bg/60 pointer-events-none" />
-
-      {/* Cursor glow effect */}
-      <CursorGlow color="rgb(99, 112, 241)" size={500} blur={60} opacity={0.15} />
-
-      {/* Particles (subtle, behind content) */}
-      <div className="fixed inset-0 z-[2] pointer-events-none">
-        <Particles
-          quantity={30}
-          color="rgb(99, 112, 241)"
-          minSize={1}
-          maxSize={2}
-          speed={0.3}
-          showConnections={false}
-          mouseInteract={false}
-        />
-      </div>
+      {/* Cursor glow effect (subtle) */}
+      <CursorGlow color="rgb(100, 108, 225)" size={400} blur={80} opacity={0.08} />
 
       {/* Content */}
       <div className="relative z-20">

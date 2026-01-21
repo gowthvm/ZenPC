@@ -22,24 +22,11 @@ const config: Config = {
         accent: {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           fg: 'rgb(var(--accent-fg) / <alpha-value>)',
-          glow: 'rgb(var(--accent-glow) / <alpha-value>)',
         },
-        // Premium palette
-        premium: {
-          purple: 'rgb(var(--premium-purple) / <alpha-value>)',
-          blue: 'rgb(var(--premium-blue) / <alpha-value>)',
-          cyan: 'rgb(var(--premium-cyan) / <alpha-value>)',
-          emerald: 'rgb(var(--premium-emerald) / <alpha-value>)',
-          amber: 'rgb(var(--premium-amber) / <alpha-value>)',
-          rose: 'rgb(var(--premium-rose) / <alpha-value>)',
-        },
-        // Neon palette
-        neon: {
-          purple: 'rgb(var(--neon-purple) / <alpha-value>)',
-          blue: 'rgb(var(--neon-blue) / <alpha-value>)',
-          cyan: 'rgb(var(--neon-cyan) / <alpha-value>)',
-          green: 'rgb(var(--neon-green) / <alpha-value>)',
-        },
+        // Semantic colors
+        success: 'rgb(var(--success) / <alpha-value>)',
+        warning: 'rgb(var(--warning) / <alpha-value>)',
+        error: 'rgb(var(--error) / <alpha-value>)',
       },
       spacing: {
         18: '4.5rem',
@@ -55,6 +42,7 @@ const config: Config = {
         '2xl': 'var(--radius-2xl)',
       },
       transitionDuration: {
+        instant: 'var(--dur-instant)',
         fast: 'var(--dur-fast)',
         base: 'var(--dur-base)',
         slow: 'var(--dur-slow)',
@@ -63,14 +51,17 @@ const config: Config = {
       transitionTimingFunction: {
         premium: 'var(--ease-premium)',
         out: 'var(--ease-out)',
-        bounce: 'var(--ease-bounce)',
-        elastic: 'var(--ease-elastic)',
+        spring: 'var(--ease-spring)',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
+        subtle: 'var(--shadow-subtle)',
+        elevated: 'var(--shadow-elevated)',
+        lifted: 'var(--shadow-lifted)',
+        'inset-sm': 'var(--shadow-inset)',
         glass: '0 1px 0 rgb(255 255 255 / 0.04) inset, 0 0 0 1px rgb(255 255 255 / 0.06) inset, 0 10px 30px rgb(0 0 0 / 0.45)',
         'glow-sm': '0 0 10px rgb(var(--accent) / 0.3)',
         'glow-md': '0 0 20px rgb(var(--accent) / 0.3), 0 0 40px rgb(var(--accent) / 0.1)',
@@ -82,6 +73,12 @@ const config: Config = {
         'depth-2': '0 4px 6px rgb(0 0 0 / 0.1), 0 2px 4px rgb(0 0 0 / 0.1)',
         'depth-3': '0 10px 15px rgb(0 0 0 / 0.1), 0 4px 6px rgb(0 0 0 / 0.1)',
         'depth-4': '0 20px 25px rgb(0 0 0 / 0.15), 0 10px 10px rgb(0 0 0 / 0.1)',
+      },
+      opacity: {
+        '8': '0.08',
+        '12': '0.12',
+        '15': '0.15',
+        '92': '0.92',
       },
       backdropBlur: {
         glass: '12px',

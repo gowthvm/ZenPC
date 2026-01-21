@@ -21,21 +21,21 @@ export interface BadgeProps extends Omit<HTMLMotionProps<'span'>, 'ref'> {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  success: 'bg-green-500/15 text-green-400 border-green-500/30',
-  warning: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  error: 'bg-red-500/15 text-red-400 border-red-500/30',
-  default: 'bg-surface-1/60 text-text-primary border-border/20',
-  accent: 'bg-accent/15 text-accent border-accent/30',
-  critical: 'bg-red-600/30 text-red-200 border-red-700/50',
-  danger: 'bg-red-700/30 text-red-200 border-red-800/50',
-  outline: 'border border-border/30 text-text-primary bg-transparent',
-  blue: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  green: 'bg-green-500/15 text-green-400 border-green-500/30',
-  yellow: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  red: 'bg-red-500/15 text-red-400 border-red-500/30',
-  gray: 'bg-surface-1/60 text-text-muted border-border/20',
-  indigo: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
-  emerald: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  success: 'bg-green-500/20 text-green-300 border-green-500/25',
+  warning: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/25',
+  error: 'bg-red-500/20 text-red-300 border-red-500/25',
+  default: 'bg-surface-1/70 text-text-primary border-border/15',
+  accent: 'bg-accent/15 text-accent border-accent/25',
+  critical: 'bg-red-600/30 text-red-200 border-red-700/40',
+  danger: 'bg-red-700/30 text-red-200 border-red-800/40',
+  outline: 'border border-border/25 text-text-primary bg-transparent',
+  blue: 'bg-blue-500/20 text-blue-300 border-blue-500/25',
+  green: 'bg-green-500/20 text-green-300 border-green-500/25',
+  yellow: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/25',
+  red: 'bg-red-500/20 text-red-300 border-red-500/25',
+  gray: 'bg-surface-1/70 text-text-muted border-border/15',
+  indigo: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/25',
+  emerald: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/25',
 };
 
 const glowStyles: Partial<Record<BadgeVariant, string>> = {

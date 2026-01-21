@@ -4,7 +4,7 @@ import React, { forwardRef, useRef, useState } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-export type CardVariant = 'glass' | 'solid' | 'gradient' | 'glow' | 'interactive' | '3d';
+export type CardVariant = 'glass' | 'solid' | 'gradient' | 'glow' | 'interactive' | '3d' | 'static';
 
 export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
   variant?: CardVariant;
@@ -15,11 +15,12 @@ export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
 
 const variantClasses: Record<CardVariant, string> = {
   glass: 'card',
-  solid: 'rounded-xl border border-border/10 bg-surface-2 shadow-md',
+  solid: 'rounded-xl border border-border/8 bg-surface-2 shadow-subtle',
   gradient: 'card-gradient',
   glow: 'card-glow',
   interactive: 'card-interactive',
   '3d': 'card-3d',
+  static: 'card-static',
 };
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -61,9 +62,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         style={magneticStyle}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+        transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
         {...props}
       >
         {children}
