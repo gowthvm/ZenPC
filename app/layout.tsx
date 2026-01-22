@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   title: 'ZenPC - Premium PC Builder',
   description: 'Build your perfect PC with real-time compatibility checking, expert recommendations, and a beautiful interface.',
   keywords: ['PC Builder', 'Custom PC', 'Computer Build', 'Gaming PC', 'Build Guide'],
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
 };
 
 export default function RootLayout({

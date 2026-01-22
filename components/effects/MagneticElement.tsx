@@ -208,29 +208,49 @@ export const CursorGlow = ({
 }: CursorGlowProps) => {
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isVisible, setIsVisible] = useState(false);
+    const rafId = useRef<number>();
+    const lastUpdateTime = useRef<number>(0);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            setPosition({ x: e.clientX, y: e.clientY });
-            setIsVisible(true);
+            // Reduced throttling for faster response (~120fps)
+            const now = performance.now();
+            if (now - lastUpdateTime.current < 8) return; // ~120fps
+            lastUpdateTime.current = now;
+
+            // Cancel any pending animation frame
+            if (rafId.current) {
+                cancelAnimationFrame(rafId.current);
+            }
+
+            rafId.current = requestAnimationFrame(() => {
+                setPosition({ x: e.clientX, y: e.clientY });
+                setIsVisible(true);
+            });
         };
 
         const handleMouseLeave = () => {
             setIsVisible(false);
+            if (rafId.current) {
+                cancelAnimationFrame(rafId.current);
+            }
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseleave', handleMouseLeave);
+        window.addEventListener('mousemove', handleMouseMove, { passive: true });
+        document.addEventListener('mouseleave', handleMouseLeave, { passive: true });
 
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseleave', handleMouseLeave);
+            if (rafId.current) {
+                cancelAnimationFrame(rafId.current);
+            }
         };
     }, []);
 
     return (
         <motion.div
-            className={cn('fixed pointer-events-none z-0', className)}
+            className={cn('fixed pointer-events-none z-10', className)}
             animate={{
                 x: position.x - size / 2,
                 y: position.y - size / 2,
@@ -238,8 +258,9 @@ export const CursorGlow = ({
             }}
             transition={{
                 type: 'spring',
-                stiffness: 200,
-                damping: 30,
+                stiffness: 300,  // Increased for faster response
+                damping: 25,     // Adjusted for quick but smooth movement
+                mass: 0.5,       // Reduced for lighter, faster feel
             }}
             style={{
                 width: size,
@@ -247,6 +268,7 @@ export const CursorGlow = ({
                 borderRadius: '50%',
                 background: `radial-gradient(circle at center, ${color} 0%, transparent 70%)`,
                 filter: `blur(${blur}px)`,
+                willChange: 'transform, opacity', // Performance optimization
             }}
         />
     );

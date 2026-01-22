@@ -6,6 +6,7 @@ import { useBuilderStore } from '@/store/builder';
 import { supabase } from '@/lib/supabaseClient';
 import { evaluateCompatibility } from '@/lib/compatibilityEngine';
 import CompatibilityIssueDisplay from './CompatibilityIssueDisplay';
+import BuilderPreviewPanel3D from './BuilderPreviewPanel3D';
 import { SkeletonPartCard } from '@/components/ui/LoadingSkeleton';
 import { Progress } from '@/components/ui/Progress';
 import type { CompatibilityIssue } from '@/lib/compatibilityEngine';
@@ -120,7 +121,7 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
   const totalSteps = BUILD_ORDER.length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Left Column - Part Categories */}
       <div className="lg:col-span-1">
         <div className="space-y-3">
@@ -404,6 +405,12 @@ export default function BuildFlowPanel({ onSave, buildName }: BuildFlowPanelProp
           </div>
         </div>
       </div>
+
+      {/* Far Right Column - 3D Preview */}
+      <div className="lg:col-span-1">
+        <BuilderPreviewPanel3D />
+      </div>
     </div>
   );
 }
+

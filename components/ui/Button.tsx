@@ -39,7 +39,7 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends Omit<HTMLMotionProps<'button'>, 'ref'>,
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'ref'>,
   VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   loading?: boolean;
@@ -115,7 +115,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           mass: 0.1,
         }}
         whileTap={{ scale: 0.98 }}
-        {...props}
       >
         {loading && (
           <Loader2 className="h-4 w-4 animate-spin" />

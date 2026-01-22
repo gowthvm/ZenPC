@@ -48,13 +48,12 @@ export const AnimatedCard = forwardRef<HTMLDivElement, AnimatedCardProps>(
         const backRotation = isFlipped ? 0 : (direction === 'horizontal' ? -180 : 180);
 
         return (
-            <div
+            <motion.div
                 ref={ref}
-                className={cn('relative perspective-1000', className)}
+                className={cn('relative', className)}
                 onClick={handleClick}
                 onMouseEnter={() => handleHover(true)}
                 onMouseLeave={() => handleHover(false)}
-                style={{ perspective: '1000px' }}
                 {...props}
             >
                 {/* Front */}
@@ -89,7 +88,7 @@ export const AnimatedCard = forwardRef<HTMLDivElement, AnimatedCardProps>(
                 >
                     {back}
                 </motion.div>
-            </div>
+            </motion.div>
         );
     }
 );
@@ -97,7 +96,7 @@ export const AnimatedCard = forwardRef<HTMLDivElement, AnimatedCardProps>(
 AnimatedCard.displayName = 'AnimatedCard';
 
 // Expandable Card
-export interface ExpandableCardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface ExpandableCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'content'> {
     header: React.ReactNode;
     content: React.ReactNode;
     defaultExpanded?: boolean;
@@ -223,7 +222,7 @@ export const StackedCards = ({
 };
 
 // Reveal Card - reveals content on scroll/viewport
-export interface RevealCardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface RevealCardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
     delay?: number;
     direction?: 'up' | 'down' | 'left' | 'right';
 }

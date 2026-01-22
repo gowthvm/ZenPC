@@ -771,4 +771,93 @@
   .text-pretty {
     text-wrap: pretty;
   }
+
+  /* === Prevent Text Clipping === */
+  .text-no-clip {
+    overflow: visible !important;
+    text-overflow: unset !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* === Custom Slider Styling === */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .slider::-webkit-slider-track {
+    background: rgb(var(--surface-2));
+    height: 8px;
+    border-radius: 4px;
+    border: 1px solid rgb(var(--border) / 0.1);
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgb(var(--accent));
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border: 2px solid rgb(var(--bg));
+    box-shadow: 0 0 10px rgb(var(--accent) / 0.3);
+    transition: all 0.2s ease;
+  }
+
+  .slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px rgb(var(--accent) / 0.5);
+  }
+
+  .slider::-moz-range-track {
+    background: rgb(var(--surface-2));
+    height: 8px;
+    border-radius: 4px;
+    border: 1px solid rgb(var(--border) / 0.1);
+  }
+
+  .slider::-moz-range-thumb {
+    background: rgb(var(--accent));
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border: 2px solid rgb(var(--bg));
+    box-shadow: 0 0 10px rgb(var(--accent) / 0.3);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px rgb(var(--accent) / 0.5);
+  }
+
+  /* === Scrollbar Hide Utility === */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* === Enhanced Animations === */
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease-in-out infinite;
+  }
 }

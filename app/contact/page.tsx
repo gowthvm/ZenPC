@@ -87,7 +87,7 @@ export default function ContactPage() {
                 Message Sent!
               </h3>
               <p className="text-text-muted">
-                Thanks for reaching out. We'll get back to you within 24 hours.
+                Thanks for reaching out. We&apos;ll get back to you within 24 hours.
               </p>
             </motion.div>
           ) : (

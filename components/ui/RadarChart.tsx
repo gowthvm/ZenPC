@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +44,7 @@ export const RadarChart = ({
     const angleStep = (2 * Math.PI) / numPoints;
 
     // Calculate points for polygon
-    const calculatePoints = (values: typeof data) => {
+    const calculatePoints = useCallback((values: typeof data) => {
         return values.map((item, index) => {
             const angle = index * angleStep - Math.PI / 2;
             const normalizedValue = (item.value / (item.maxValue || 100));
@@ -54,12 +54,12 @@ export const RadarChart = ({
                 y: center + r * Math.sin(angle),
             };
         });
-    };
+    }, [angleStep, radius, center]);
 
-    const points = useMemo(() => calculatePoints(data), [data]);
+    const points = useMemo(() => calculatePoints(data), [data, calculatePoints]);
     const comparisonPoints = useMemo(
         () => comparison ? calculatePoints(comparison) : null,
-        [comparison]
+        [comparison, calculatePoints]
     );
 
     // Generate polygon path
