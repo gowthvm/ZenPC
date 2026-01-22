@@ -1,6 +1,6 @@
 import './globals.css';
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { ToastProvider } from '@/components/ui/Toast';
 
@@ -20,11 +20,12 @@ export const metadata: Metadata = {
   title: 'ZenPC - Premium PC Builder',
   description: 'Build your perfect PC with real-time compatibility checking, expert recommendations, and a beautiful interface.',
   keywords: ['PC Builder', 'Custom PC', 'Computer Build', 'Gaming PC', 'Build Guide'],
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
