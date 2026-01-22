@@ -1,6 +1,6 @@
 'use client';
 
-import { ImmersiveBackground } from '../components/ImmersiveBackground';
+import ImmersiveBackground from '@/components/ImmersiveBackground';
 
 export default function CareersPage() {
   return (
