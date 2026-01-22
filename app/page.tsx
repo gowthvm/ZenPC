@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import Aurora from '@/components/Aurora';
 import { CursorGlow } from '@/components/effects/MagneticElement';
 import PCVisualizer3D from '@/components/PCVisualizer3D';
+import PCVisualizer3DAdvanced from '@/components/PCVisualizer3DAdvanced';
 import {
   Zap, Shield, BookOpen, Wallet, Users, Lightbulb,
   ArrowRight, ChevronUp, Cpu, Monitor, HardDrive, Sparkles, 
@@ -1062,20 +1063,26 @@ export default function Page() {
                 variants={fadeInUp}
                 className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center"
               >
-                {/* 3D Visualizer */}
+                {/* 3D Visualizer - ADVANCED */}
                 <motion.div
                   className="lg:col-span-2"
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                  <PCVisualizer3D 
-                    gpuColor="#e0700f"
-                    cpuColor="#0084d1"
-                    ramColor="#f0ad4e"
-                    storageColor="#5cb85c"
+                  <PCVisualizer3DAdvanced 
+                    selectedParts={{
+                      gpu: { name: 'RTX 4070 Ti', color: '#ff4444' },
+                      cpu: { name: 'i9-13900K', color: '#0084d1' },
+                      ram: { name: 'G.Skill Trident Z5', color: '#f0ad4e' },
+                      storage: { name: 'Samsung 990 Pro', color: '#5cb85c' },
+                    }}
                     autoRotate={true}
                     height="600px"
                     showControls={true}
+                    showLabels={true}
+                    theme="dark"
+                    mouseControls={true}
+                    quality="high"
                   />
                 </motion.div>
 
@@ -1085,23 +1092,23 @@ export default function Page() {
                     {[
                       {
                         icon: Eye,
-                        title: '360° Rotation',
-                        description: 'View your build from every angle. Rotate freely to inspect all components.'
+                        title: '360° Inspection',
+                        description: 'Rotate, zoom, and inspect from every angle with smooth, hardware-accelerated rendering.'
                       },
                       {
                         icon: Layers,
-                        title: 'Component Details',
-                        description: 'GPU, CPU, RAM, and storage are color-coded and clearly labeled for easy identification.'
+                        title: 'Exploded View',
+                        description: 'See component separation and understand exact placement within your case.'
                       },
                       {
                         icon: Zap,
-                        title: 'Real-time Preview',
-                        description: 'See exactly how your components fit together with accurate proportions and spacing.'
+                        title: 'Real-time Updates',
+                        description: 'Watch the 3D model update instantly as you select components in the builder.'
                       },
                       {
                         icon: Gauge,
-                        title: 'Cable Routing',
-                        description: 'Visualize cable pathways and plan your build for optimal aesthetics and airflow.'
+                        title: 'Smart Lighting',
+                        description: 'Switch themes to visualize your build in different lighting conditions.'
                       }
                     ].map((item, i) => (
                       <motion.div
@@ -1160,13 +1167,25 @@ export default function Page() {
                       name: 'Gaming Powerhouse',
                       desc: 'RTX 4070 Ti + i9-13900K',
                       gpu: '#ff4444',
-                      cpu: '#0084d1'
+                      cpu: '#0084d1',
+                      parts: {
+                        gpu: { name: 'RTX 4070 Ti', color: '#ff4444' },
+                        cpu: { name: 'i9-13900K', color: '#0084d1' },
+                        ram: { name: 'Corsair Dominator', color: '#f0ad4e' },
+                        storage: { name: 'Samsung SSD', color: '#5cb85c' },
+                      }
                     },
                     {
                       name: '3D Workstation',
                       desc: 'RTX 6900 XT + Threadripper',
                       gpu: '#ff8800',
-                      cpu: '#ffaa00'
+                      cpu: '#ffaa00',
+                      parts: {
+                        gpu: { name: 'RTX 6900 XT', color: '#ff8800' },
+                        cpu: { name: 'Threadripper PRO', color: '#ffaa00' },
+                        ram: { name: 'Kingston FURY', color: '#f0ad4e' },
+                        storage: { name: 'WD Black SN850X', color: '#5cb85c' },
+                      }
                     }
                   ].map((build, i) => (
                     <motion.div
@@ -1174,26 +1193,27 @@ export default function Page() {
                       variants={scaleIn}
                       className="space-y-4"
                     >
-                      <div className="rounded-lg overflow-hidden bg-gradient-to-br from-surface-1/60 to-surface-2/30 border border-border/20 p-6">
-                        <div className="mb-4">
+                      <div className="rounded-lg overflow-hidden bg-gradient-to-br from-surface-1/60 to-surface-2/30 border border-border/20 p-6 space-y-4">
+                        <div>
                           <h4 className="text-xl font-bold text-text-primary">{build.name}</h4>
                           <p className="text-sm text-accent">{build.desc}</p>
                         </div>
-                        <PCVisualizer3D
-                          gpuColor={build.gpu}
-                          cpuColor={build.cpu}
-                          ramColor="#f0ad4e"
-                          storageColor="#5cb85c"
+                        <PCVisualizer3DAdvanced
+                          selectedParts={build.parts}
                           autoRotate={true}
-                          height="300px"
-                          showControls={false}
+                          height="320px"
+                          showControls={true}
+                          showLabels={true}
+                          theme="ambient"
+                          mouseControls={true}
+                          quality="medium"
                         />
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="w-full mt-4 px-4 py-2 bg-accent/20 hover:bg-accent/30 text-accent font-semibold rounded-lg transition-all"
+                          className="w-full px-4 py-2 bg-accent/20 hover:bg-accent/30 text-accent font-semibold rounded-lg transition-all"
                         >
-                          View Details
+                          View Details & Build
                         </motion.button>
                       </div>
                     </motion.div>
